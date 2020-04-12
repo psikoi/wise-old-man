@@ -60,8 +60,6 @@ services:
       - 80:80
     links:
       - server
-    environment:
-      REACT_APP_API_BASE_URL: /api
 networks:
   webnet:
   pgadminnet:

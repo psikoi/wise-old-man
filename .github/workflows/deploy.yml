@@ -2,7 +2,7 @@ name: Rebuild Images and Deploy
 
 on:
   push:
-    branches: [master]
+    branches: [master, google-analytics]
 
 jobs:
   integration-test:
@@ -87,4 +87,3 @@ jobs:
             cd wise-old-man
             docker-compose pull
             docker-compose up -d
-            docker ps
