@@ -54,6 +54,7 @@ This should add a _package-lock.json_ file and a _node_modules_ directory inside
 ## Environment Variables
 
 Copy the example file to configure the development app
+
 ```
 cp .env.example .env
 ```
@@ -91,7 +92,7 @@ cd app
 And now you can start the app by running the command:
 
 ```
-npm start
+npm run start
 ```
 
 And there it is! You can now access the app at:
