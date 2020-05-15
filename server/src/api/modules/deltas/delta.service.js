@@ -119,15 +119,20 @@ async function getAllDeltas(playerId) {
     throw new BadRequestError('Invalid player id.');
   }
 
-  const deltas = await Delta.findAll({
-    where: { playerId },
-    include: [
-      { model: Snapshot, as: 'startSnapshot' },
-      { model: Snapshot, as: 'endSnapshot' },
-      { model: InitialValues, as: 'initialValues' },
-      { model: Player }
-    ]
-  });
+  const latestSnapshot = await snapshotService.findLatest(playerId);
+
+  if (!latestSnapshot) {
+    throw new ServerError(`Couldn't find deltas for that player.`);
+  }
+
+  const [initial] = await InitialValues.findOrCreate({ where: { playerId } });
+
+  const deltas = await Promise.all(
+    PERIODS.map(async period => {
+      const startSnapshot = await snapshotService.findFirstIn(playerId, period);
+      return { startSnapshot, endSnapshot: latestSnapshot, initialValues: initial, period };
+    })
+  );
 
   if (!deltas || deltas.length === 0) {
     throw new ServerError(`Couldn't find deltas for that player.`);
@@ -142,7 +147,11 @@ async function getAllDeltas(playerId) {
 }
 
 /**
- * Get a player delta for a specific period.
+ * Get the real-time player delta for a specific period.
+ *
+ * Note: deltas are cached in the database for faster leaderboard
+ * processing, but this method calculates them on demand, for
+ * real-time results. (Cached deltas require update to refresh)
  */
 async function getDelta(playerId, period) {
   if (!playerId) {
@@ -153,21 +162,21 @@ async function getDelta(playerId, period) {
     throw new BadRequestError(`Invalid period: ${period}.`);
   }
 
-  const delta = await Delta.findOne({
-    where: { playerId, period },
-    include: [
-      { model: Snapshot, as: 'startSnapshot' },
-      { model: Snapshot, as: 'endSnapshot' },
-      { model: InitialValues, as: 'initialValues' },
-      { model: Player }
-    ]
-  });
+  // Fetch the first endpoint created since NOW - period (Ex: in the past 24h)
+  const startSnapshot = await snapshotService.findFirstIn(playerId, period);
 
-  if (!delta) {
+  // Fetch the latest snapshot, if it's not already provided through a parameter
+  const endSnapshot = await snapshotService.findLatest(playerId);
+
+  // Fetch the player's initial values, if they're not already provided through a parameter
+  const [initialValues] = await InitialValues.findOrCreate({ where: { playerId } });
+
+  if (!startSnapshot || !endSnapshot) {
     throw new ServerError(`Couldn't find ${period} deltas for that player.`);
   }
 
-  const { startSnapshot, endSnapshot, initialValues } = delta;
+  const delta = { startSnapshot, endSnapshot, initialValues, period };
+
   return format(delta, snapshotService.diff(startSnapshot, endSnapshot, initialValues));
 }
 
