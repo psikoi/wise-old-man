@@ -237,7 +237,7 @@ const notificationsMiddleware = store => next => action => {
         type: 'success'
       };
 
-      store.dispatch(showNotification({ ...notification }));
+      store.dispatch(showNotification({ ...notification, duration: 10000 }));
       break;
     }
 
