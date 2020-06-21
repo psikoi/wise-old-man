@@ -501,6 +501,7 @@ async function getHiscoresNames(username) {
 exports.standardize = standardize;
 exports.sanitize = sanitize;
 exports.isValidUsername = isValidUsername;
+exports.shouldImport = shouldImport;
 exports.findAllOrCreate = findAllOrCreate;
 exports.findAll = findAll;
 exports.find = find;
