@@ -27,14 +27,7 @@ async function search(req: Request, res: Response, next: NextFunction) {
 // POST /players/track/
 async function track(req: Request, res: Response, next: NextFunction) {
   try {
-    const username = extractString(req.body, { key: 'username', required: true });
-
-    if (!username) throw new BadRequestError('Invalid username.');
-
-    // Update the player, by creating a new snapshot
-    const [playerDetails, isNew] = await playerService.update(username);
-
-    res.status(isNew ? 201 : 200).json(playerDetails);
+    res.status(400).json({ message: 'The Trailblazer league has ended. You can no longer update.' });
   } catch (e) {
     next(e);
   }
