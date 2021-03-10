@@ -73,7 +73,15 @@ async function syncInitialValues(playerId: number, latest: Snapshot) {
   const [initial] = await InitialValues.findOrCreate({ where: { playerId } });
 
   mapValues(latest.toJSON(), (value, key) => {
-    if (value > -1 && initial[key] === -1) {
+    // If this is the first time this player is ranked in this metric, set the current
+    // value as the initial (first recorded)
+    const isNewlyRanked = value > -1 && initial[key] === -1;
+
+    // If this player was previously ranked but has fallen off the hiscores,
+    // then reset the initial value back to -1
+    const isNewlyUnranked = value === -1 && initial[key] > -1;
+
+    if (isNewlyRanked || isNewlyUnranked) {
       initial[key] = value;
     }
   });
