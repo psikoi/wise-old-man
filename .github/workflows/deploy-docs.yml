@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "docs/**"
+      - "packages/docs/**"
 
 jobs:
   build-docs:
@@ -19,7 +19,7 @@ jobs:
 
       - name: Build and Push To Docker Hub
         run: |
-          cd docs
+          cd packages/docs
           docker build . --file Dockerfile --tag wiseoldman/docs:latest
           docker push wiseoldman/docs:latest
   deploy:

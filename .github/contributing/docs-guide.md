@@ -38,7 +38,7 @@ Open the terminal on the root directory (I use the VSCode terminal) and do the f
 Go into the docs directory
 
 ```
-cd docs
+cd packages/docs
 ```
 
 Install dependencies using npm
@@ -47,7 +47,7 @@ Install dependencies using npm
 npm i
 ```
 
-This should add a _package-lock.json_ file and a _node_modules_ directory inside the _docs_ directory.
+This should add a _package-lock.json_ file and a _node_modules_ directory inside the _packages/docs_ directory.
 
 <br />
 
@@ -58,7 +58,7 @@ If you have done every step above, you're ready to start developing.
 Make sure you're in the docs directory, if you're not, run this command:
 
 ```
-cd docs
+cd packages/docs
 ```
 
 And now you can start the server by running the command:

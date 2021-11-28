@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'docs/**'
+      - "packages/docs/**"
 
 jobs:
   lint-docs:
@@ -33,9 +33,9 @@ jobs:
         run: npm i
       - name: Install docs dependencies
         run: |
-          cd docs
+          cd packages/docs
           npm i
       - name: Run ESLint (Docs)
         run: |
-          cd docs
+          cd packages/docs
           npm run lint
