@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "app/**"
+      - "packages/app/**"
 
 jobs:
   build-app:
@@ -21,7 +21,7 @@ jobs:
         env:
           ANALYTICS_TRACKING_ID: ${{ secrets.ANALYTICS_TRACKING_ID }}
         run: |
-          cd app
+          cd packages/app
           docker build . --file Dockerfile --tag wiseoldman/app:latest --build-arg REACT_APP_ANALYTICS_TRACKING_ID=$ANALYTICS_TRACKING_ID
           docker push wiseoldman/app:latest
   deploy:

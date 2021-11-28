@@ -38,7 +38,7 @@ Open the terminal on the root directory (I use the VSCode terminal) and do the f
 Go into the app directory
 
 ```
-cd app
+cd packages/app
 ```
 
 Install dependencies using npm
@@ -80,7 +80,7 @@ If you have done every step above, you're ready to start developing.
 Make sure you're in the app directory, if you're not, run this command:
 
 ```
-cd app
+cd packages/app
 ```
 
 And now you can start the app by running the command:

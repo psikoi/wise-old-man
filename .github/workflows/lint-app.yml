@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'app/**'
+      - "packages/app/**"
 
 jobs:
   lint-app:
@@ -33,9 +33,9 @@ jobs:
         run: npm i
       - name: Install app dependencies
         run: |
-          cd app
+          cd packages/app
           npm i
       - name: Run ESLint (App)
         run: |
-          cd app
+          cd packages/app
           npm run lint
