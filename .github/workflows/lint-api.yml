@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - 'server/**'
+      - "packages/server/**"
 
 jobs:
   lint-server:
@@ -33,9 +33,9 @@ jobs:
         run: npm i
       - name: Install server dependencies
         run: |
-          cd server
+          cd packages/server
           npm i
       - name: Run ESLint (Server)
         run: |
-          cd server
+          cd packages/server
           npm run lint

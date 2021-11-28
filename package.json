@@ -1,11 +1,10 @@
 {
   "name": "wise-old-man",
   "version": "1.0.0",
+  "author": "Psikoi",
+  "license": "MIT",
   "description": "The Open Source Old School Runescape progress tracker.",
   "main": "index.js",
-  "scripts": {
-    "setup:docker": "docker-compose up --build -d && docker logs -f api"
-  },
   "keywords": [
     "Oldschool",
     "Old School",
@@ -17,6 +16,10 @@
     "experience",
     "tracker"
   ],
-  "author": "Psikoi",
-  "license": "MIT"
+  "scripts": {
+    "setup:docker": "docker-compose up --build -d && docker logs -f api"
+  },
+  "devDependencies": {
+    "lerna": "^4.0.0"
+  }
 }

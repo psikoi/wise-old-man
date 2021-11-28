@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - "server/**"
+      - "packages/server/**"
 
 jobs:
   build-api:
@@ -19,7 +19,7 @@ jobs:
 
       - name: Build and Push To Docker Hub
         run: |
-          cd server
+          cd packages/server
           docker build . --file Dockerfile --tag wiseoldman/api:latest
           docker push wiseoldman/api:latest
   deploy:

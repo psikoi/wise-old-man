@@ -22,9 +22,9 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - name: Install dependencies
-        run: cd server && npm ci
+        run: cd packages/server && npm ci
       - name: Run integration tests
-        run: cd server && npm test
+        run: cd packages/server && npm test
         env:
           CI: true
           DB_STORAGE: ./__tests__/database.sqlite

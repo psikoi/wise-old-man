@@ -144,5 +144,5 @@ dist
 # Stores VSCode versions used for testing VSCode extensions
 .vscode-test
 
-server/__tests__/database.sqlite
+packages/server/__tests__/database.sqlite
 *.sqlite

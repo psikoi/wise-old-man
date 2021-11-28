@@ -48,7 +48,7 @@ Open the terminal on the root directory (I use the VSCode terminal) and do the f
 Go into the server directory
 
 ```
-cd server
+cd packages/server
 ```
 
 Install dependencies using npm
@@ -57,7 +57,7 @@ Install dependencies using npm
 npm i
 ```
 
-This should add a _package-lock.json_ file and a _node_modules_ directory inside the _server_ directory.
+This should add a _package-lock.json_ file and a _node_modules_ directory inside the _packages/server_ directory.
 
 <br />
 
@@ -187,7 +187,7 @@ I suggest running integration tests before commiting, to make sure your new code
 Open the terminal and type the following commands:
 
 ```
-cd server
+cd packages/server
 ```
 
 ```
