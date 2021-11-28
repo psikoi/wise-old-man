@@ -1,7 +1,6 @@
 {
-  "name": "wise-old-man-app",
+  "name": "@wise-old-man/app",
   "version": "1.0.0",
-  "private": true,
   "dependencies": {
     "@material/react-tab": "^0.15.0",
     "@material/react-tab-bar": "^0.15.0",
