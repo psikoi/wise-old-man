@@ -8,15 +8,16 @@ import {
   getMetricMeasure,
   METRICS
 } from '@wise-old-man/utils';
+import prisma, { AchievementModel, fixAchievement } from '../../../prisma';
 import { Pagination } from '../../../types';
 import { sequelize } from '../../../database';
-import { Achievement, Snapshot, Player } from '../../../database/models';
+import { Achievement, Snapshot } from '../../../database/models';
 import { ACHIEVEMENT_TEMPLATES } from '../../modules/achievements/templates';
 import * as snapshotService from './snapshot.service';
 
 const UNKNOWN_DATE = new Date(0);
 
-interface ExtendedAchievement extends Achievement {
+interface ExtendedAchievement extends AchievementModel {
   measure: string;
 }
 
@@ -37,7 +38,10 @@ interface AchievementDefinition {
 }
 
 async function getPlayerAchievements(playerId: number) {
-  const achievements = await Achievement.findAll({ where: { playerId } });
+  const achievements = await prisma.achievement
+    .findMany({ where: { playerId } })
+    .then(a => a.map(fixAchievement));
+
   return achievements.map(format);
 }
 
@@ -157,13 +161,15 @@ async function reevaluateAchievements(playerId: number): Promise<void> {
 }
 
 async function getGroupAchievements(playerIds: number[], pagination: Pagination) {
-  const achievements = await Achievement.findAll({
-    where: { playerId: playerIds },
-    include: [{ model: Player }],
-    order: [['createdAt', 'DESC']],
-    limit: pagination.limit,
-    offset: pagination.offset
-  });
+  const achievements = await prisma.achievement
+    .findMany({
+      where: { playerId: { in: playerIds } },
+      orderBy: { createdAt: 'desc' },
+      include: { player: true },
+      take: pagination.limit,
+      skip: pagination.offset
+    })
+    .then(a => a.map(fixAchievement));
 
   return achievements.map(format);
 }
@@ -231,9 +237,9 @@ function getDefinitions(): AchievementDefinition[] {
   return definitions;
 }
 
-function format(achievement: Achievement): ExtendedAchievement {
+function format(achievement: AchievementModel): ExtendedAchievement {
   const measure = getAchievementMeasure(achievement.metric, achievement.threshold);
-  return { ...(achievement.toJSON() as any), measure };
+  return { ...achievement, measure };
 }
 
 function getAchievemenName(name: string, threshold: number): string {

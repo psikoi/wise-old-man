@@ -9,7 +9,7 @@ services:
       - ./server/.env
   db:
     container_name: db
-    image: postgres
+    image: postgres:12
     networks:
       - webnet
       - pgadminnet
@@ -19,6 +19,8 @@ services:
       - ./server/.env
     expose:
       - "5432"
+    ports:
+      - "5432:5432"
   pgadmin:
     container_name: pgadmin
     image: dpage/pgadmin4

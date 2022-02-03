@@ -18,15 +18,7 @@ import {
 } from '@wise-old-man/utils';
 import { MigratedGroupInfo, Pagination } from '../../../types';
 import { sequelize } from '../../../database';
-import {
-  Achievement,
-  Group,
-  Membership,
-  NameChange,
-  Player,
-  Record,
-  Snapshot
-} from '../../../database/models';
+import { Group, Membership, NameChange, Player, Record, Snapshot } from '../../../database/models';
 import { BadRequestError, NotFoundError } from '../../errors';
 import { isValidDate } from '../../util/dates';
 import { get200msCount, getCombatLevel, getTotalLevel } from '../../util/experience';
@@ -39,6 +31,7 @@ import * as nameService from './name.service';
 import * as playerService from './player.service';
 import * as recordService from './record.service';
 import * as snapshotService from './snapshot.service';
+import { AchievementModel } from 'src/prisma';
 
 interface Member extends Player {
   role: string;
@@ -269,7 +262,7 @@ async function getGainedInPeriod(groupId: number, period: string, metric: string
 /**
  * Get the 10 most recent player achievements for a given group.
  */
-async function getAchievements(groupId: number, pagination: Pagination): Promise<Achievement[]> {
+async function getAchievements(groupId: number, pagination: Pagination): Promise<AchievementModel[]> {
   const memberships = await Membership.findAll({
     where: { groupId },
     attributes: ['playerId']
