@@ -36,7 +36,6 @@ jobs:
       - name: Install dependencies
         run: cd server && npm ci
       - name: Run Integration Tests
-        run: cd server && npm run test
         run: |
           cd server
           prisma migrate reset --force
