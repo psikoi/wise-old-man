@@ -6,6 +6,7 @@
   "license": "ISC",
   "main": "dist/server.js",
   "scripts": {
+    "prebuild": "prisma generate",
     "build": "rm -rf ./dist/ && tsc",
     "lint": "eslint . --ext .ts",
     "dev": "cross-env ./scripts/run-dev.sh",
