@@ -4,7 +4,7 @@ WORKDIR /wise-old-man/server
 
 COPY package*.json ./
 RUN npm install -s
-RUN npx prisma generate --schema=./server/prisma/schema.prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN npm install pm2
 
 COPY . .
