@@ -38,7 +38,7 @@ jobs:
       - name: Run Integration Tests
         run: |
           cd server
-          prisma migrate reset --force
+          npx prisma migrate reset --force
           export NODE_ENV=test
           export TZ=UTC
           jest __tests__/suites --detectOpenHandles --verbose --force-exit
