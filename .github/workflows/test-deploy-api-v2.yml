@@ -5,7 +5,7 @@ on:
   push:
     branches:
       # TODO: change this to master
-      - feat/prisma-orm-v2
+      - master
 # TODO: UNCOMMENT THIS
 # paths:
 #   - "server/**"
