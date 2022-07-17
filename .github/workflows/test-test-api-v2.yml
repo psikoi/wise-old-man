@@ -47,4 +47,4 @@ jobs:
           POSTGRES_PORT: 5432
           REDIS_PORT: 6379
           PGADMIN_PORT: 54321
-          DATABASE_URL: postgresql://postgres:postgres@test:5432/test?schema=public
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test?schema=public
