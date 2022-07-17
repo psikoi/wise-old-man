@@ -1,0 +1,41 @@
+name: Run API v2 Integration Tests
+
+on:
+  # TODO: change this to pull request
+  push:
+    branches:
+      # TODO: change this to master
+      - feat/prisma-orm-v2
+# TODO: UNCOMMENT THIS
+# paths:
+#   - "server/**"
+
+jobs:
+  integration-test:
+    name: Integration Test (API)
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [16.16]
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: cd server && npm ci
+      - name: Run integration tests
+        run: cd server && npm run test
+        env:
+          CI: true
