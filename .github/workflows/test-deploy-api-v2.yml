@@ -1,0 +1,24 @@
+name: (TEST) Build v2 API Image
+
+on:
+  push:
+    branches:
+      - feat/prisma-orm-v2
+    paths:
+      - "server/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Get npm version
+        id: package-version
+        uses: martinbeentjes/npm-get-version-action@main
+        with:
+          path: server
+
+      - name: Test npm version
+        run: echo ${{steps.package-version.outputs.current-version}}
