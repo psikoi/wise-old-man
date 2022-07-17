@@ -6,8 +6,9 @@ on:
     branches:
       # TODO: change this to master
       - feat/prisma-orm-v2
-    paths:
-      - "server/**"
+# TODO: UNCOMMENT THIS
+# paths:
+#   - "server/**"
 
 jobs:
   build-api-image:
@@ -21,6 +22,9 @@ jobs:
         uses: martinbeentjes/npm-get-version-action@main
         with:
           path: server
+
+      - name: Login to Docker Hub
+        run: docker login -u ${{ secrets.ORG_DOCKER_USERNAME }} -p ${{ secrets.ORG_DOCKER_PASSWORD }}
 
       - name: Build Docker Image and Push To Docker Hub
         run: |
