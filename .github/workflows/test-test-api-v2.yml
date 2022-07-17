@@ -41,7 +41,7 @@ jobs:
           npx prisma migrate reset --force
           export NODE_ENV=test
           export TZ=UTC
-          jest __tests__/suites --detectOpenHandles --verbose --force-exit
+          npx jest __tests__/suites --detectOpenHandles --verbose --force-exit
         env:
           CI: true
           POSTGRES_PORT: 5432
