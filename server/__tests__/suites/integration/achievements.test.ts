@@ -58,6 +58,12 @@ afterAll(async done => {
 
 describe('Achievements API', () => {
   describe('Achievements Sync', () => {
+    test('db fetch', async () => {
+      const firstResponse = await apiMock.get(`/competitions`);
+      expect(firstResponse.status).toBe(200);
+      expect(firstResponse.body.length).toBe(0);
+    });
+
     test('Fetch Achievement from unknown player', async () => {
       const firstResponse = await apiMock.get(`/players/username/idk/achievements`);
       expect(firstResponse.status).toBe(404);
