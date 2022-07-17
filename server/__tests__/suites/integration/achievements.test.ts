@@ -58,12 +58,6 @@ afterAll(async done => {
 
 describe('Achievements API', () => {
   describe('Achievements Sync', () => {
-    test('db fetch', async () => {
-      const firstResponse = await apiMock.get(`/competitions`);
-      expect(firstResponse.status).toBe(200);
-      expect(firstResponse.body.length).toBe(0);
-    });
-
     test('Fetch Achievement from unknown player', async () => {
       const firstResponse = await apiMock.get(`/players/username/idk/achievements`);
       expect(firstResponse.status).toBe(404);
@@ -86,7 +80,7 @@ describe('Achievements API', () => {
       // Track player (first time)
       const trackResponse = await apiMock.post(`/players/track`).send({ username: 'Psikoi' });
 
-      expect(trackResponse.status).toBe(201);
+      expect(trackResponse.body).toBe(201);
       expect(trackResponse.body.username).toBe('psikoi');
       expect(trackResponse.body.type).toBe('regular');
 
