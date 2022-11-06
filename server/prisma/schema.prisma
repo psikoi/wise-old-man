@@ -16,6 +16,20 @@ model ApiKey {
   @@map("apiKeys")
 }
 
+model PlayerOperation {
+  playerId  Int
+  type      PlayerOperationType
+  createdAt DateTime            @default(now()) @db.Timestamptz(6)
+
+  // Relations
+  player Player @relation(fields: [playerId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  // Constraints
+  @@id([playerId, type, createdAt])
+  // Map
+  @@map("playerOperations")
+}
+
 model Achievement {
   playerId  Int
   name      String   @db.VarChar(255)
@@ -268,14 +282,15 @@ model Player {
   latestSnapshotId Int?
 
   // Relations
-  latestSnapshot Snapshot?       @relation("player_latest_snapshot", fields: [latestSnapshotId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  achievements   Achievement[]
-  deltas         Delta[]
-  memberships    Membership[]
-  nameChanges    NameChange[]
-  participations Participation[]
-  records        Record[]
-  snapshots      Snapshot[]
+  achievements    Achievement[]
+  deltas          Delta[]
+  memberships     Membership[]
+  nameChanges     NameChange[]
+  participations  Participation[]
+  records         Record[]
+  snapshots       Snapshot[]
+  latestSnapshot  Snapshot?         @relation("player_latest_snapshot", fields: [latestSnapshotId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  PlayerOperation PlayerOperation[]
 
   // Indices
   @@index([type], map: "players_type")
@@ -1172,4 +1187,11 @@ enum Metric {
   guardians_of_the_rift
 
   @@map("metric")
+}
+
+enum PlayerOperationType {
+  import_cml
+  review_type
+
+  @@map("player_operation_type")
 }

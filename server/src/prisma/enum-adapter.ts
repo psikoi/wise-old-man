@@ -196,6 +196,13 @@ export const PlayerBuild = {
 
 export type PlayerBuild = typeof PlayerBuild[keyof typeof PlayerBuild];
 
+export const PlayerOperationType = {
+  IMPORT_CML: 'import_cml',
+  REVIEW_TYPE: 'review_type'
+} as const;
+
+export type PlayerOperationType = typeof PlayerOperationType[keyof typeof PlayerOperationType];
+
 export const CompetitionType = {
   CLASSIC: 'classic',
   TEAM: 'team'

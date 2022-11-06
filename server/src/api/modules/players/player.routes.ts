@@ -6,7 +6,6 @@ const api = Router();
 
 api.get('/search', setupController(controller.search));
 
-api.post('/:username/import-history', setupController(controller.importPlayer));
 api.post('/:username/assert-type', setupController(controller.assertType));
 api.get('/:username/groups', setupController(controller.groups));
 api.get('/:username/gained', setupController(controller.gained));

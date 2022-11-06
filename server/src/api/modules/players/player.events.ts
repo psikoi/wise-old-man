@@ -51,8 +51,8 @@ async function onPlayerUpdated(player: Player, snapshot: Snapshot, hasChanged: b
   // Update this player's deltas (gains)
   await metrics.trackEffect(deltaServices.syncPlayerDeltas, player, snapshot);
 
-  // Attempt to import this player's history from CML
-  await metrics.trackEffect(playerServices.importPlayerHistory, player);
+  // Attempt to import this player's history from CML (will be skipped if already imported recently)
+  await metrics.trackEffect(playerServices.importCMLHistory, player);
 
   // If this player is an inactive iron player, their type should be reviewed
   // This allows us to catch de-iron players early, and adjust their type accordingly

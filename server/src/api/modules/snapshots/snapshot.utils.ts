@@ -110,6 +110,103 @@ function format(snapshot: Snapshot, efficiencyMap?: EfficiencyMap): FormattedSna
 }
 
 /**
+ * Iterates through the snapshots array and checks if there aren't any values (negative gains or excessive gains)
+ */
+function isValidHistory(snapshots: Snapshot[]) {
+  return snapshots.every((snapshot, i) => {
+    if (i === 0) return true;
+    return withinRange(snapshots[i - 1], snapshot);
+  });
+}
+
+async function interpolateMissingValues(currentHistory: Snapshot[], importedSnapshots: Snapshot[]) {
+  // Inherit missing values from an origin snapshot
+  function inheritMissingValues(from: Snapshot, to: Snapshot) {
+    const toCopy = { ...to };
+
+    METRICS.forEach(m => {
+      const key = getMetricValueKey(m);
+      if (toCopy[key] === -1) toCopy[key] = from[key];
+    });
+
+    return toCopy;
+  }
+
+  if (currentHistory.length < 2) {
+    throw new ServerError("Can't backfill missing snapshot values with less than 2 snapshots.");
+  }
+
+  const firstInHistory = currentHistory[0];
+  const lastInHistory = currentHistory[currentHistory.length - 1];
+
+  const validImports: Snapshot[] = [];
+
+  let minSearchIndex = 1;
+
+  importedSnapshots.forEach(snapshot => {
+    if (snapshot.createdAt <= firstInHistory.createdAt) {
+      // If this snapshot happened before any of the snapshots in the player's history
+      // then we can't assume any of the missing values, we should leave them as -1 and just
+      // check if this snapshot's is valid and fits in the history
+      if (isValidHistory([snapshot, firstInHistory])) {
+        validImports.push(snapshot);
+      }
+
+      return;
+    }
+
+    // Note: This shouldn't really happen often (if at all) because this get executed when the player is updated,
+    // which means it would require CML to be updated between the player updated and this side effect running
+    if (snapshot.createdAt >= lastInHistory.createdAt) {
+      // If this snapshot happened after any of the snapshots in the player's history
+      // just inherit missing values from the last snapshot in the player's history
+      const adjustedSubject = inheritMissingValues(lastInHistory, snapshot);
+
+      if (isValidHistory([lastInHistory, adjustedSubject])) {
+        validImports.push(adjustedSubject);
+      }
+
+      return;
+    }
+
+    // If this snapshot happened somewhere in the player's history
+    // iterate through it to find exactly where it fits
+    for (let i = minSearchIndex; i < currentHistory.length; i++) {
+      const current = currentHistory[i];
+      const previous = currentHistory[i - 1];
+
+      // If this snapshot happened in between the current and previous snapshots
+      if (snapshot.createdAt >= previous.createdAt && snapshot.createdAt <= current.createdAt) {
+        let fixedSnapshot: Snapshot;
+
+        // Inherit values from the closest of the two snapshots
+        if (
+          snapshot.createdAt.getTime() - previous.createdAt.getTime() <
+          current.createdAt.getTime() - snapshot.createdAt.getTime()
+        ) {
+          fixedSnapshot = inheritMissingValues(previous, snapshot);
+        } else {
+          fixedSnapshot = inheritMissingValues(current, snapshot);
+        }
+
+        if (isValidHistory([previous, fixedSnapshot, current])) {
+          validImports.push(fixedSnapshot);
+        }
+
+        // Reset i back to the previous index so we can continue searching from there on the next iteration
+        i--;
+
+        break;
+      }
+
+      minSearchIndex++;
+    }
+  });
+
+  return validImports;
+}
+
+/**
  * Decides whether two snapshots are within reasonable time/progress distance
  * of eachother. The difference between the two cannot be negative, or over the
  * EHP (maximum efficiency).
@@ -172,7 +269,7 @@ function hasNegativeGains(before: Snapshot, after: Snapshot): boolean {
   const metricsToIgnore = [Metric.EHP, Metric.EHB, Metric.LAST_MAN_STANDING, Metric.PVP_ARENA];
   const isValidKey = (key: MetricValueKey) => !metricsToIgnore.map(getMetricValueKey).includes(key);
 
-  return METRICS.map(getMetricValueKey).some(k => isValidKey(k) && after[k] > -1 && after[k] < before[k]);
+  return METRICS.map(getMetricValueKey).some(k => isValidKey(k) && after[k] > 0 && after[k] < before[k]);
 }
 
 function average(snapshots: Snapshot[]): Snapshot {
@@ -264,6 +361,8 @@ export {
   hasExcessiveGains,
   hasNegativeGains,
   withinRange,
+  interpolateMissingValues,
+  isValidHistory,
   isF2p,
   isZerker,
   is10HP,

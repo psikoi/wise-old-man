@@ -73,23 +73,6 @@ async function assertType(req: Request): Promise<ControllerResponse> {
   };
 }
 
-// POST /players/:username/import-history
-async function importPlayer(req: Request): Promise<ControllerResponse> {
-  if (!adminGuard.checkAdminPermissions(req)) {
-    throw new ForbiddenError('Incorrect admin password.');
-  }
-
-  // Find the player using the username param
-  const player = await playerUtils.resolvePlayer(getString(req.params.username));
-
-  const { count } = await playerServices.importPlayerHistory(player);
-
-  return {
-    statusCode: 200,
-    response: { count, message: `Sucessfully imported ${count} snapshots from CML.` }
-  };
-}
-
 // GET /players/:username
 async function details(req: Request): Promise<ControllerResponse> {
   // Find the player by their username
@@ -265,7 +248,6 @@ export {
   search,
   track,
   assertType,
-  importPlayer,
   details,
   detailsById,
   achievements,

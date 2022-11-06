@@ -15,7 +15,7 @@ import {
   Country
 } from '@prisma/client';
 import { isComputedMetric } from '../utils';
-import { NameChangeStatus } from './enum-adapter';
+import { NameChangeStatus, PlayerOperationType } from './enum-adapter';
 import { routeAfterHook } from './hooks';
 import { parseBigInt } from './utils';
 
@@ -126,6 +126,7 @@ export {
   // Enums
   Country,
   NameChangeStatus,
+  PlayerOperationType,
   // Utils
   setHooksEnabled,
   modifyDelta,
