@@ -177,17 +177,8 @@ async function interpolateMissingValues(currentHistory: Snapshot[], importedSnap
 
       // If this snapshot happened in between the current and previous snapshots
       if (snapshot.createdAt >= previous.createdAt && snapshot.createdAt <= current.createdAt) {
-        let fixedSnapshot: Snapshot;
-
-        // Inherit values from the closest of the two snapshots
-        if (
-          snapshot.createdAt.getTime() - previous.createdAt.getTime() <
-          current.createdAt.getTime() - snapshot.createdAt.getTime()
-        ) {
-          fixedSnapshot = inheritMissingValues(previous, snapshot);
-        } else {
-          fixedSnapshot = inheritMissingValues(current, snapshot);
-        }
+        // Inherit missing values from the previous snapshot
+        const fixedSnapshot = inheritMissingValues(previous, snapshot);
 
         if (isValidHistory([previous, fixedSnapshot, current])) {
           validImports.push(fixedSnapshot);

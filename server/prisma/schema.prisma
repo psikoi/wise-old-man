@@ -282,15 +282,15 @@ model Player {
   latestSnapshotId Int?
 
   // Relations
-  achievements    Achievement[]
-  deltas          Delta[]
-  memberships     Membership[]
-  nameChanges     NameChange[]
-  participations  Participation[]
-  records         Record[]
-  snapshots       Snapshot[]
-  latestSnapshot  Snapshot?         @relation("player_latest_snapshot", fields: [latestSnapshotId], references: [id], onDelete: SetNull, onUpdate: NoAction)
-  PlayerOperation PlayerOperation[]
+  achievements     Achievement[]
+  deltas           Delta[]
+  memberships      Membership[]
+  nameChanges      NameChange[]
+  participations   Participation[]
+  records          Record[]
+  snapshots        Snapshot[]
+  latestSnapshot   Snapshot?         @relation("player_latest_snapshot", fields: [latestSnapshotId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  playerOperations PlayerOperation[]
 
   // Indices
   @@index([type], map: "players_type")
