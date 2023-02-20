@@ -1,7 +1,7 @@
 import { uniqBy } from 'lodash';
 import { z } from 'zod';
 import prisma, { PlayerOperationType } from '../../../../prisma';
-import { Period, PeriodProps, Snapshot, SnapshotDataSource } from '../../../../utils';
+import { Period, PeriodProps, Snapshot, SnapshotDataSource, SnapshotFragment } from '../../../../utils';
 import { ServerError } from '../../../errors';
 import * as cmlService from '../../../services/external/cml.service';
 import * as snapshotServices from '../../snapshots/snapshot.services';
@@ -49,15 +49,23 @@ async function importCMLHistory(payload: ImportCMLHistoryParams): Promise<{ coun
     importedSnapshots = importedSnapshots.sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
     // Dedupe the new snapshots
-    importedSnapshots = uniqBy(importedSnapshots, 'createdAt');
+    importedSnapshots = uniqBy(importedSnapshots, s => s.createdAt.getTime());
 
-    // Ensure this player's history is valid (no negative gains, no excessive gains)
-    if (!isValidHistory(importedSnapshots)) {
+    const currentHistory = (await snapshotServices.findPlayerSnapshots({ id })).sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+    );
+
+    // Interpolate (backfill) any missing values
+    importedSnapshots = interpolateMissingValues(currentHistory, importedSnapshots);
+
+    const newHistory = [...currentHistory, ...importedSnapshots].sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+    );
+
+    // Ensure this player's history will still be  valid (no negative gains, no excessive gains)
+    if (!isValidHistory(newHistory)) {
       throw new ServerError('CML history is invalid.');
     }
-
-    // Backfill any missing values
-    importedSnapshots = await backfillMissingValues(id, importedSnapshots);
 
     await prisma.snapshot.createMany({ data: importedSnapshots });
   }
@@ -70,15 +78,6 @@ async function importCMLHistory(payload: ImportCMLHistoryParams): Promise<{ coun
   playerEvents.onPlayerImported(id);
 
   return { count: importedSnapshots.length };
-}
-
-async function backfillMissingValues(playerId: number, importedSnapshots: Snapshot[]) {
-  // Fetch and sort the current snapshots by date (ascending)
-  const currentHistory = (await snapshotServices.findPlayerSnapshots({ id: playerId })).sort(
-    (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-  );
-
-  return await interpolateMissingValues(currentHistory, importedSnapshots);
 }
 
 async function fetchCMLHistorySince(playerId: number, username: string, time: number) {
@@ -108,4 +107,33 @@ async function shouldImportCML(playerId: number): Promise<[boolean, Date | null]
   ];
 }
 
-export { importCMLHistory };
+async function saveAllSnapshots(inputs: SnapshotFragment[]): Promise<{ count: number }> {
+  if (inputs.length === 0) {
+    return { count: 0 };
+  }
+
+  const existingSnapshots = await prisma.snapshot.findMany({
+    where: { playerId: inputs[0].playerId }
+  });
+
+  const existingVals = existingSnapshots.map(({ playerId, createdAt }) => {
+    return JSON.stringify({ playerId, timestamp: createdAt.getTime() });
+  });
+
+  // Filter out any repeated snapshots
+  const newVals = inputs.filter(({ playerId, createdAt }) => {
+    return !existingVals.includes(JSON.stringify({ playerId, timestamp: (createdAt as Date).getTime() }));
+  });
+
+  if (!newVals || !newVals.length) {
+    return { count: 0 };
+  }
+
+  const { count } = await prisma.snapshot.createMany({
+    data: newVals
+  });
+
+  return { count };
+}
+
+export { importCMLHistory, saveAllSnapshots };

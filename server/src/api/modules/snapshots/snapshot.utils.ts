@@ -119,7 +119,7 @@ function isValidHistory(snapshots: Snapshot[]) {
   });
 }
 
-async function interpolateMissingValues(currentHistory: Snapshot[], importedSnapshots: Snapshot[]) {
+function interpolateMissingValues(currentHistory: Snapshot[], importedSnapshots: Snapshot[]) {
   // Inherit missing values from an origin snapshot
   function inheritMissingValues(from: Snapshot, to: Snapshot) {
     const toCopy = { ...to };
@@ -143,12 +143,18 @@ async function interpolateMissingValues(currentHistory: Snapshot[], importedSnap
 
   let minSearchIndex = 1;
 
-  importedSnapshots.forEach(snapshot => {
+  importedSnapshots.forEach((snapshot, index) => {
     if (snapshot.createdAt <= firstInHistory.createdAt) {
       // If this snapshot happened before any of the snapshots in the player's history
       // then we can't assume any of the missing values, we should leave them as -1 and just
       // check if this snapshot's is valid and fits in the history
-      if (isValidHistory([snapshot, firstInHistory])) {
+      if (
+        isValidHistory(
+          index === 0
+            ? [snapshot, firstInHistory]
+            : [validImports[validImports.length - 1], snapshot, firstInHistory]
+        )
+      ) {
         validImports.push(snapshot);
       }
 
@@ -162,7 +168,15 @@ async function interpolateMissingValues(currentHistory: Snapshot[], importedSnap
       // just inherit missing values from the last snapshot in the player's history
       const adjustedSubject = inheritMissingValues(lastInHistory, snapshot);
 
-      if (isValidHistory([lastInHistory, adjustedSubject])) {
+      const postHistoryImports = validImports.filter(i => i.createdAt >= lastInHistory.createdAt);
+
+      if (
+        isValidHistory(
+          postHistoryImports.length === 0
+            ? [lastInHistory, adjustedSubject]
+            : [postHistoryImports[postHistoryImports.length - 1], adjustedSubject]
+        )
+      ) {
         validImports.push(adjustedSubject);
       }
 
