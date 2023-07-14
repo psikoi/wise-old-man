@@ -2,8 +2,8 @@ import axios from 'axios';
 import { WebhookClient } from 'discord.js';
 import { omit } from 'lodash';
 import env, { isTesting } from '../../../env';
-import { FlaggedPlayerReviewContext } from '../../../utils';
-import prisma, { Achievement, Player, Competition } from '../../../prisma';
+import { ActivityType, FlaggedPlayerReviewContext, GroupRole } from '../../../utils';
+import prisma, { Achievement, Player, Competition, MemberActivity } from '../../../prisma';
 import logger from '../../util/logging';
 import {
   CompetitionDetails,
@@ -42,6 +42,10 @@ function dispatch(type: string, payload: unknown) {
   axios.post(env.DISCORD_BOT_API_URL, { type, data: payload }).catch(e => {
     logger.error('Error sending discord event.', e);
   });
+}
+
+async function dispatchMemberRoleChanged(memberActivity: MemberActivity, previousRole: GroupRole) {
+  dispatch(ActivityType.CHANGED_ROLE, { memberActivity, previousRole });
 }
 
 /**
@@ -217,5 +221,6 @@ export {
   dispatchCompetitionStarted,
   dispatchCompetitionEnded,
   dispatchCompetitionStarting,
-  dispatchCompetitionEnding
+  dispatchCompetitionEnding,
+  dispatchMemberRoleChanged
 };
