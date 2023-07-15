@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { omit } from 'lodash';
 import prisma, { modifyPlayer } from '../../../../prisma';
 import { GroupRole } from '../../../../utils';
 import logger from '../../../util/logging';
@@ -72,7 +73,7 @@ async function changeMemberRole(payload: ChangeMemberRoleService): Promise<Membe
         }
       });
 
-      groupEvents.onMembersRolesChanged([{ ...activity, previousRole: membership.role }]);
+      groupEvents.onMembersRolesChanged([omit({ ...activity, previousRole: membership.role }, 'createdAt')]);
 
       return {
         ...updatedMembership,
