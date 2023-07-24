@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { omit } from 'lodash';
-import prisma, { Membership, modifyPlayer, PrismaPlayer, PrismaTypes, Player } from '../../../../prisma';
+import prisma, {
+  Membership,
+  modifyPlayer,
+  PrismaPlayer,
+  PrismaTypes,
+  Player,
+  NameChange,
+  NameChangeStatus
+} from '../../../../prisma';
 import { GroupRole, PRIVELEGED_GROUP_ROLES } from '../../../../utils';
 import logger from '../../../util/logging';
 import { BadRequestError, ServerError } from '../../../errors';
@@ -175,19 +183,56 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
   const joinedEvents: MemberJoinedEvent[] = [];
   const changedRoleEvents: MemberRoleChangeEvent[] = [];
 
+  const nameChanges = (await prisma.nameChange.findMany({
+    where: {
+      OR: missingPlayers.map(p => {
+        const startsWith = p.username;
+        return { newName: { startsWith, mode: 'insensitive' } };
+      }),
+      status: NameChangeStatus.PENDING
+    },
+    orderBy: { createdAt: 'desc' }
+  })) as NameChange[];
+
   await prisma
     .$transaction(async transaction => {
-      // Remove any players that are no longer members
-      const removedPlayerIds = await removeExcessMemberships(
+      const excessMemberships = await removeExcessMemberships(
         transaction,
         params.id,
         memberships,
         nextUsernames
       );
 
+      const removeFromAdd: number[] = [];
+      const removeFromExcess: number[] = [];
+
+      for (const nameChange of nameChanges) {
+        const { oldName, newName } = nameChange;
+
+        for (const player of missingPlayers) {
+          const excess = excessMemberships.find(m => m.player.username === oldName.toLowerCase());
+
+          if (player.username === newName.toLowerCase() && excess !== undefined) {
+            removeFromAdd.push(player.id);
+            removeFromExcess.push(excess.playerId);
+          }
+        }
+      }
+
+      await transaction.membership.deleteMany({
+        where: {
+          groupId: params.id,
+          playerId: {
+            in: excessMemberships.map(m => m.playerId)
+          }
+        }
+      });
+
       // Register "player left" events
       leftEvents.push(
-        ...removedPlayerIds.map(id => ({ playerId: id, groupId: params.id, type: ActivityType.LEFT }))
+        ...excessMemberships
+          .filter(m => !removeFromExcess.includes(m.playerId))
+          .map(m => ({ playerId: m.playerId, groupId: m.groupId, type: ActivityType.LEFT }))
       );
 
       // Add any missing memberships
@@ -199,7 +244,11 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
       );
 
       // Register "player joined" events
-      joinedEvents.push(...addedPlayerIds.map(m => ({ ...m, type: ActivityType.JOINED })));
+      joinedEvents.push(
+        ...addedPlayerIds
+          .filter(id => !removeFromAdd.includes(id.playerId))
+          .map(pId => ({ ...pId, type: ActivityType.JOINED }))
+      );
 
       const roleUpdatesMap = calculateRoleChangeMaps(keptPlayers, memberships, params.members);
 
@@ -226,7 +275,8 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
             groupId: params.id,
             role,
             type: ActivityType.CHANGED_ROLE,
-            previousRole: currentRoleMap.get(id)
+            previousRole: currentRoleMap.get(id),
+            displayName: keptPlayers.find(p => p.id === id).displayName
           }))
         );
       }
@@ -235,7 +285,7 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
         data: [
           ...leftEvents,
           ...joinedEvents.map(a => ({ ...a, role: null })),
-          ...changedRoleEvents.map(p => omit(p, 'previousRole'))
+          ...changedRoleEvents.map(p => omit(p, 'previousRole', 'displayName'))
         ]
       });
 
@@ -265,19 +315,17 @@ async function removeExcessMemberships(
   groupId: number,
   currentMemberships: (Membership & { player: PrismaPlayer })[],
   nextUsernames: string[]
-) {
-  const excessMemberIds = currentMemberships
-    .filter(m => !nextUsernames.includes(m.player.username))
-    .map(m => m.playerId);
+): Promise<(Membership & { player: PrismaPlayer })[]> {
+  const excessMemberships = currentMemberships.filter(m => !nextUsernames.includes(m.player.username));
 
   await transaction.membership.deleteMany({
     where: {
       groupId,
-      playerId: { in: excessMemberIds }
+      playerId: { in: excessMemberships.map(m => m.playerId) }
     }
   });
 
-  return excessMemberIds;
+  return excessMemberships;
 }
 
 async function addMissingMemberships(
