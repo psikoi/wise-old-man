@@ -6,7 +6,6 @@ import prisma, {
   PrismaPlayer,
   PrismaTypes,
   Player,
-  NameChange,
   NameChangeStatus
 } from '../../../../prisma';
 import { GroupRole, PRIVELEGED_GROUP_ROLES } from '../../../../utils';
@@ -183,16 +182,16 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
   const joinedEvents: MemberJoinedEvent[] = [];
   const changedRoleEvents: MemberRoleChangeEvent[] = [];
 
-  const nameChanges = (await prisma.nameChange.findMany({
+  const nameChanges = await prisma.nameChange.findMany({
     where: {
       OR: missingPlayers.map(p => {
-        const startsWith = p.username;
-        return { newName: { startsWith, mode: 'insensitive' } };
+        const equals = p.username;
+        return { newName: { equals, mode: 'insensitive' } };
       }),
       status: NameChangeStatus.PENDING
     },
     orderBy: { createdAt: 'desc' }
-  })) as NameChange[];
+  });
 
   await prisma
     .$transaction(async transaction => {
@@ -275,8 +274,7 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
             groupId: params.id,
             role,
             type: ActivityType.CHANGED_ROLE,
-            previousRole: currentRoleMap.get(id),
-            displayName: keptPlayers.find(p => p.id === id).displayName
+            previousRole: currentRoleMap.get(id)
           }))
         );
       }
@@ -285,7 +283,7 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
         data: [
           ...leftEvents,
           ...joinedEvents.map(a => ({ ...a, role: null })),
-          ...changedRoleEvents.map(p => omit(p, 'previousRole', 'displayName'))
+          ...changedRoleEvents.map(p => omit(p, 'previousRole'))
         ]
       });
 
@@ -315,7 +313,7 @@ async function removeExcessMemberships(
   groupId: number,
   currentMemberships: (Membership & { player: PrismaPlayer })[],
   nextUsernames: string[]
-): Promise<(Membership & { player: PrismaPlayer })[]> {
+) {
   const excessMemberships = currentMemberships.filter(m => !nextUsernames.includes(m.player.username));
 
   await transaction.membership.deleteMany({
