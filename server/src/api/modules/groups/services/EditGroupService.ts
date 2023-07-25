@@ -218,15 +218,6 @@ async function executeUpdate(params: EditGroupParams, updatedGroupFields: Prisma
         }
       }
 
-      await transaction.membership.deleteMany({
-        where: {
-          groupId: params.id,
-          playerId: {
-            in: excessMemberships.map(m => m.playerId)
-          }
-        }
-      });
-
       // Register "player left" events
       leftEvents.push(
         ...excessMemberships
