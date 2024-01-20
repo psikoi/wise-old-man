@@ -44,14 +44,14 @@ const MAXED_STATS = Object.fromEntries(SKILLS.map(s => [s, SKILL_EXP_AT_99])) as
 
 export const ALGORITHMS = new Map<EfficiencyAlgorithmType, EfficiencyAlgorithm>(
   [
-    buildAlgorithmCache(EfficiencyAlgorithmType.MAIN, mainSkillingMetas, mainBossingMetas),
-    buildAlgorithmCache(EfficiencyAlgorithmType.IRONMAN, ironmanSkillingMetas, ironmanBossingMetas),
-    buildAlgorithmCache(EfficiencyAlgorithmType.ULTIMATE, ultimateSkillingMetas, ironmanBossingMetas),
-    buildAlgorithmCache(EfficiencyAlgorithmType.LVL3, lvl3SkillingMetas),
-    buildAlgorithmCache(EfficiencyAlgorithmType.F2P, f2pSkillingMetas),
-    buildAlgorithmCache(EfficiencyAlgorithmType.F2P_LVL3, f2pLvl3SkillingMetas),
-    buildAlgorithmCache(EfficiencyAlgorithmType.F2P_IRONMAN, f2pIronmanSkillingMetas),
-    buildAlgorithmCache(EfficiencyAlgorithmType.F2P_LVL3_IRONMAN, f2pLvl3IronmanSkillingMetas)
+    buildAlgorithmCache(EfficiencyAlgorithmType.MAIN, mainSkillingMetas, mainBossingMetas)
+    // buildAlgorithmCache(EfficiencyAlgorithmType.IRONMAN, ironmanSkillingMetas, ironmanBossingMetas),
+    // buildAlgorithmCache(EfficiencyAlgorithmType.ULTIMATE, ultimateSkillingMetas, ironmanBossingMetas),
+    // buildAlgorithmCache(EfficiencyAlgorithmType.LVL3, lvl3SkillingMetas),
+    // buildAlgorithmCache(EfficiencyAlgorithmType.F2P, f2pSkillingMetas),
+    // buildAlgorithmCache(EfficiencyAlgorithmType.F2P_LVL3, f2pLvl3SkillingMetas),
+    // buildAlgorithmCache(EfficiencyAlgorithmType.F2P_IRONMAN, f2pIronmanSkillingMetas),
+    // buildAlgorithmCache(EfficiencyAlgorithmType.F2P_LVL3_IRONMAN, f2pLvl3IronmanSkillingMetas)
   ].map(a => [a.type, a])
 );
 
@@ -221,10 +221,23 @@ function calculateTT200mMap(experienceMap: ExperienceMap, metas: SkillMetaConfig
   const startBonusExp = calculateBonuses(fixedMap, getBonuses(metas, BonusType.START), true);
   const startExps = Object.fromEntries(SKILLS.map(s => [s, fixedMap[s] + (startBonusExp[s] || 0)]));
 
-  const endBonusExp = calculateBonuses(fixedMap as ExperienceMap, getBonuses(metas, BonusType.END), false);
+  // Hacky way to get the max bonus exp for each skill, will do better later
+  const maxEndBonuses = calculateBonuses(ZERO_STATS, getBonuses(metas, BonusType.END), false);
+  maxEndBonuses[Skill.FISHING] = metas.find(sm => sm.skill === Skill.HUNTER)?.bonuses[0]?.maxBonus;
+
+  const endBonusExp = calculateBonuses(fixedMap, getBonuses(metas, BonusType.END), false);
 
   const endExps = Object.fromEntries(
-    SKILLS.map(s => [s, s in endBonusExp ? MAX_SKILL_EXP - endBonusExp[s] : MAX_SKILL_EXP])
+    SKILLS.map(s => {
+      const realExpLeft = MAX_SKILL_EXP - fixedMap[s];
+      const calculatedExpLeft = realExpLeft - (endBonusExp[s] ?? 0);
+
+      if (calculatedExpLeft > 0) {
+        return [s, MAX_SKILL_EXP - (maxEndBonuses[s] ?? 0) - Math.min(0, calculatedExpLeft)];
+      }
+
+      return [s, MAX_SKILL_EXP - (maxEndBonuses[s] ?? 0) - Math.max(0, calculatedExpLeft)];
+    })
   );
 
   function calculateSkillTT200m(skill: Skill, startExp: number, useRealRates = false) {
