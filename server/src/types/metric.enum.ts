@@ -52,6 +52,7 @@ export const Boss = {
   ARAXXOR: 'araxxor',
   ARTIO: 'artio',
   BARROWS_CHESTS: 'barrows_chests',
+  BOVINE_BULLY: 'bovine_bully',
   BRYOPHYTA: 'bryophyta',
   CALLISTO: 'callisto',
   CALVARION: 'calvarion',

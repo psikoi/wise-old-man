@@ -146,6 +146,9 @@ export interface Snapshot {
   barrows_chestsRank: number;
   barrows_chestsKills: number;
 
+  bovine_bullyRank: number;
+  bovine_bullyKills: number;
+
   bryophytaRank: number;
   bryophytaKills: number;
 
