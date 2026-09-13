@@ -26,13 +26,11 @@ type Filter = {
 
 export async function fetchCompetitionDetails({
   id,
-  metric,
-  previewMetrics,
+  metrics,
   filter = {}
 }: {
   id: number;
-  metric?: Metric;
-  previewMetrics?: Metric[];
+  metrics?: Metric[];
   filter?: Filter;
 }): Promise<{
   competition: Competition;
@@ -90,10 +88,7 @@ export async function fetchCompetitionDetails({
     throw new BadRequestError("The given date range does not overlap with the competition's period.");
   }
 
-  const competitionMetrics = competition.metrics.map(m => m.metric);
-
-  const selectedMetrics =
-    metric !== undefined ? [metric] : Array.from(new Set([...competitionMetrics, ...(previewMetrics ?? [])]));
+  const selectedMetrics = metrics ?? competition.metrics.map(m => m.metric);
 
   const participants = calculateParticipantDeltas(
     await fetchParticipantData(competition, selectedMetrics, filter),

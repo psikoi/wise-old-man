@@ -9,20 +9,18 @@ type Participant = CompetitionDetailsResponse['participations'][number];
 async function fetchCompetitionCSV({
   id,
   table = CompetitionCSVTableType.PARTICIPANTS,
-  metric,
-  previewMetrics,
+  metrics,
   teamName
 }: {
   id: number;
   table?: CompetitionCSVTableType;
-  metric?: Metric;
-  previewMetrics: Metric[];
+  metrics?: Metric[];
   teamName?: string;
 }): AsyncResult<
   string,
   { code: 'TEAM_NAME_IS_REQUIRED' } | { code: 'CANNOT_VIEW_TEAM_TABLES_FOR_CLASSIC_COMPETITION' }
 > {
-  const details = await fetchCompetitionDetails({ id, metric, previewMetrics });
+  const details = await fetchCompetitionDetails({ id, metrics });
   const competitionDetailsResponse = formatCompetitionDetailsResponse(details);
 
   if (table === CompetitionCSVTableType.PARTICIPANTS) {

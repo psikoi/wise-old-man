@@ -17,7 +17,7 @@ export default class BaseAPIClient {
       .forEach(k => {
         const value = params[k];
 
-        // Array params are repeated (ex: "?preview=magic&preview=ranged"),
+        // Array params are repeated (ex: "?metrics=magic&metrics=ranged"),
         // which is the format the API expects for them.
         if (Array.isArray(value)) {
           value.forEach(v => builder.append(k, v));

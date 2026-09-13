@@ -3625,7 +3625,7 @@ describe('Competition API', () => {
       });
     });
 
-    it('should view details (own metric as preview)', async () => {
+    it('should view details (legacy metric param, own metric)', async () => {
       const noMetricResponse = await api.get(`/competitions/${globalData.testCompetitionStarted.id}`);
       expect(noMetricResponse.status).toBe(200);
 
@@ -3635,33 +3635,79 @@ describe('Competition API', () => {
 
       expect(ownMetricResponse.status).toBe(200);
 
-      // Previewing a single-metric competition's own metric should be
-      // the same as viewing the competition without specifying a metric
+      // Selecting a single-metric competition's own metric should be
+      // the same as viewing the competition without selecting any metrics
       expect(ownMetricResponse.body.participations).toEqual(noMetricResponse.body.participations);
 
-      // No "total" delta, since there's only one (deduped) metric
+      // No "total" delta, since there's only one metric
       expect(ownMetricResponse.body.participations[0].deltas.map(d => d.metric)).toEqual(['zulrah']);
     });
 
-    it('should not view details (invalid preview metric)', async () => {
+    it('should view details (own metric)', async () => {
+      const noMetricResponse = await api.get(`/competitions/${globalData.testCompetitionStarted.id}`);
+      expect(noMetricResponse.status).toBe(200);
+
+      const ownMetricResponse = await api
+        .get(`/competitions/${globalData.testCompetitionStarted.id}`)
+        .query({ metrics: 'zulrah' });
+
+      expect(ownMetricResponse.status).toBe(200);
+
+      // Selecting a single-metric competition's own metric should be
+      // the same as viewing the competition without selecting any metrics
+      expect(ownMetricResponse.body.participations).toEqual(noMetricResponse.body.participations);
+
+      // No "total" delta, since there's only one metric
+      expect(ownMetricResponse.body.participations[0].deltas.map(d => d.metric)).toEqual(['zulrah']);
+    });
+
+    it('should not view details (invalid metrics)', async () => {
       const response = await api.get(`/competitions/${globalData.testCompetitionStarted.id}`).query({
-        preview: 'dungeoneering'
+        metrics: 'dungeoneering'
       });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toMatch('Invalid enum value');
     });
 
-    it('should view details (preview metric)', async () => {
-      // "hunter" is not one of this competition's metrics, so previewing it should add it
-      // to "deltas", and include it in the "total" delta (and therefore in the standings)
+    it('should view details (metrics replace the competition metrics)', async () => {
+      // "metrics" replaces the competition's own metrics, it doesn't add to them
       const response = await api.get(`/competitions/${globalData.testCompetitionStarted.id}`).query({
-        preview: 'hunter'
+        metrics: 'hunter'
       });
 
       expect(response.status).toBe(200);
 
-      // Preview metrics are not added to the competition itself
+      // The selected metrics are not added to the competition itself
+      expect(response.body.metrics).toMatchObject([expect.objectContaining({ metric: 'zulrah' })]);
+
+      // Only "hunter" was selected, so there's no "zulrah" delta, and no "total" delta
+      expect(response.body.participations[0].deltas.map(d => d.metric)).toEqual(['hunter']);
+
+      expect(response.body.participations.map(p => p.player.username)).toEqual([
+        'psikoi',
+        'rorro',
+        'lynx titan',
+        'usbc',
+        'zulu'
+      ]);
+
+      expect(response.body.participations[0]).toMatchObject({
+        progress: { start: 500_000, end: 750_000, gained: 250_000 },
+        levels: { start: 66, end: 70, gained: 4 }
+      });
+    });
+
+    it('should view details (own metric + extra metric)', async () => {
+      // "hunter" is not one of this competition's metrics, but it can be selected alongside
+      // "zulrah", which adds it to "deltas" and to the "total" delta (and to the standings)
+      const response = await api
+        .get(`/competitions/${globalData.testCompetitionStarted.id}`)
+        .query('metrics=zulrah&metrics=hunter');
+
+      expect(response.status).toBe(200);
+
+      // The selected metrics are not added to the competition itself
       expect(response.body.metrics).toMatchObject([expect.objectContaining({ metric: 'zulrah' })]);
 
       expect(response.body.participations.length).toBe(5);
@@ -3717,10 +3763,10 @@ describe('Competition API', () => {
       });
     });
 
-    it('should view details (multiple preview metrics)', async () => {
+    it('should view details (own metric + multiple extra metrics)', async () => {
       const response = await api
         .get(`/competitions/${globalData.testCompetitionStarted.id}`)
-        .query('preview=hunter&preview=fishing');
+        .query('metrics=zulrah&metrics=hunter&metrics=fishing');
 
       expect(response.status).toBe(200);
       expect(response.body.participations.length).toBe(5);
@@ -3737,7 +3783,7 @@ describe('Competition API', () => {
       // fishing was never modified during the competition
       expect(psikoi.deltas[3]).toMatchObject({ metric: 'fishing', values: { gained: 0 } });
 
-      // the "total" delta must add up every metric, preview metrics included
+      // the "total" delta must add up every selected metric
       const [total, ...metricDeltas] = psikoi.deltas;
 
       expect(total.values.gained).toBe(
@@ -3749,14 +3795,14 @@ describe('Competition API', () => {
       );
     });
 
-    it('should view details (legacy metric param takes priority over preview)', async () => {
+    it('should view details (legacy metric param takes priority over metrics)', async () => {
       const response = await api
         .get(`/competitions/${globalData.testCompetitionStarted.id}`)
-        .query('metric=hunter&preview=fishing');
+        .query('metric=hunter&metrics=fishing');
 
       expect(response.status).toBe(200);
 
-      // The legacy "metric" param replaces the metric list, so "preview" is ignored
+      // The legacy "metric" param replaces the metric list, so "metrics" is ignored
       expect(response.body.participations[0].deltas.map(d => d.metric)).toEqual(['hunter']);
 
       expect(response.body.participations[0]).toMatchObject({
@@ -4053,28 +4099,40 @@ describe('Competition API', () => {
         }
       });
 
-      // "hunter" is already one of this competition's metrics, so previewing it
-      // shouldn't cause it to appear twice in "deltas", or skew the "total" delta
-      const hunterDetailsResponse = await api
+      // "metrics" can select a sub-set of the competition's own metrics
+      const fishingOnlyResponse = await api
         .get(`/competitions/${createResponse.body.competition.id}`)
-        .query({ preview: 'hunter' });
+        .query({ metrics: 'fishing' });
 
-      expect(hunterDetailsResponse.status).toBe(200);
-      expect(hunterDetailsResponse.body.participations.length).toBe(4);
+      expect(fishingOnlyResponse.status).toBe(200);
 
-      expect(hunterDetailsResponse.body.participations[0].deltas.map(d => d.metric)).toEqual([
+      // Only "fishing" was selected, so there's no "hunter" delta, and no "total" delta
+      expect(fishingOnlyResponse.body.participations[0].deltas.map(d => d.metric)).toEqual(['fishing']);
+
+      // Selecting only "fishing" must match the legacy "metric=fishing" request
+      expect(fishingOnlyResponse.body.participations).toEqual(fishingDetailsResponse.body.participations);
+
+      // Selecting this competition's own metrics should be the same as selecting none
+      const ownMetricsDetailsResponse = await api
+        .get(`/competitions/${createResponse.body.competition.id}`)
+        .query('metrics=hunter&metrics=fishing');
+
+      expect(ownMetricsDetailsResponse.status).toBe(200);
+      expect(ownMetricsDetailsResponse.body.participations.length).toBe(4);
+
+      expect(ownMetricsDetailsResponse.body.participations[0].deltas.map(d => d.metric)).toEqual([
         'total',
         'hunter',
         'fishing'
       ]);
 
-      expect(hunterDetailsResponse.body.participations[0]).toMatchObject({
+      expect(ownMetricsDetailsResponse.body.participations[0]).toMatchObject({
         player: {
           username: 'sue'
         }
       });
 
-      expect(hunterDetailsResponse.body.participations[0].deltas[0]).toMatchObject({
+      expect(ownMetricsDetailsResponse.body.participations[0].deltas[0]).toMatchObject({
         metric: 'total',
         values: {
           start: 2_500_000, // 100k hunter, 2.4m fishing
@@ -4502,10 +4560,10 @@ describe('Competition API', () => {
       expect(response.body.message).toMatch("Invalid enum value for 'metric'.");
     });
 
-    it('should not view top 5 snapshots (invalid preview metric)', async () => {
+    it('should not view top 5 snapshots (invalid metrics)', async () => {
       const response = await api
         .get(`/competitions/${globalData.testCompetitionStarted.id}/top-history`)
-        .query({ preview: 'dungeoneering' });
+        .query({ metrics: 'dungeoneering' });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toMatch('Invalid enum value');
@@ -4573,10 +4631,25 @@ describe('Competition API', () => {
       expect(response.body[4].history.length).toBe(0);
     });
 
-    it('should view top 5 snapshots (preview metric)', async () => {
+    it('should view top 5 snapshots (metrics param)', async () => {
+      const legacyResponse = await api
+        .get(`/competitions/${globalData.testCompetitionStarted.id}/top-history`)
+        .query({ metric: 'hunter' });
+
       const response = await api
         .get(`/competitions/${globalData.testCompetitionStarted.id}/top-history`)
-        .query({ preview: 'hunter' });
+        .query({ metrics: 'hunter' });
+
+      expect(response.status).toBe(200);
+
+      // "metrics=hunter" selects the same metric list as the legacy "metric=hunter"
+      expect(response.body).toEqual(legacyResponse.body);
+    });
+
+    it('should view top 5 snapshots (own metric + extra metric)', async () => {
+      const response = await api
+        .get(`/competitions/${globalData.testCompetitionStarted.id}/top-history`)
+        .query('metrics=zulrah&metrics=hunter');
 
       expect(response.status).toBe(200);
       expect(response.body.length).toBe(5);
@@ -4839,10 +4912,10 @@ describe('Competition API', () => {
       expect(response.body.message).toMatch("Invalid enum value for 'metric'.");
     });
 
-    it('should not view CSV export (invalid preview metric)', async () => {
+    it('should not view CSV export (invalid metrics)', async () => {
       const response = await api
         .get(`/competitions/${globalData.testCompetitionStarted.id}/csv`)
-        .query({ preview: 'dungeoneering' });
+        .query({ metrics: 'dungeoneering' });
 
       expect(response.status).toBe(400);
       expect(response.body.message).toMatch('Invalid enum value');
@@ -4918,10 +4991,25 @@ describe('Competition API', () => {
       expect(rows[5]).toMatch('5,__ZULU,-1,-1,0,');
     });
 
-    it('should view CSV export (participants & preview metric)', async () => {
-      const response = await api.get(`/competitions/${globalData.testCompetitionStarted.id}/csv`).query({
-        preview: 'hunter'
-      });
+    it('should view CSV export (participants & metrics param)', async () => {
+      const legacyResponse = await api
+        .get(`/competitions/${globalData.testCompetitionStarted.id}/csv`)
+        .query({ metric: 'hunter' });
+
+      const response = await api
+        .get(`/competitions/${globalData.testCompetitionStarted.id}/csv`)
+        .query({ metrics: 'hunter' });
+
+      expect(response.status).toBe(200);
+
+      // "metrics=hunter" selects the same metric list as the legacy "metric=hunter"
+      expect(response.text).toBe(legacyResponse.text);
+    });
+
+    it('should view CSV export (participants & own metric + extra metric)', async () => {
+      const response = await api
+        .get(`/competitions/${globalData.testCompetitionStarted.id}/csv`)
+        .query('metrics=zulrah&metrics=hunter');
 
       expect(response.status).toBe(200);
 

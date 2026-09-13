@@ -290,10 +290,10 @@ router.get(
     }),
     query: z.object({
       /**
-       * @deprecated Use `preview` instead
+       * @deprecated Use `metrics` instead
        */
       metric: z.optional(z.nativeEnum(Metric)),
-      preview: z.optional(queryParamMetricsArray),
+      metrics: z.optional(queryParamMetricsArray),
 
       // Experimental - do NOT use for real applications
       usernames: z.optional(queryParamStringArray),
@@ -303,12 +303,11 @@ router.get(
   }),
   executeRequest(async (req, res) => {
     const { id } = req.params;
-    const { metric, preview, usernames, minDate, maxDate } = req.query;
+    const { metric, metrics, usernames, minDate, maxDate } = req.query;
 
     const details = await fetchCompetitionDetails({
       id,
-      metric,
-      previewMetrics: preview ?? [],
+      metrics: metric ? [metric] : metrics,
       filter: {
         usernames,
         minDate,
@@ -330,22 +329,21 @@ router.get(
     }),
     query: z.object({
       /**
-       * @deprecated Use `preview` instead
+       * @deprecated Use `metrics` instead
        */
       metric: z.optional(z.nativeEnum(Metric)),
-      preview: z.optional(queryParamMetricsArray),
+      metrics: z.optional(queryParamMetricsArray),
       teamName: z.optional(z.string()),
       table: z.optional(z.nativeEnum(CompetitionCSVTableType))
     })
   }),
   executeRequest(async (req, res) => {
     const { id } = req.params;
-    const { metric, preview, table, teamName } = req.query;
+    const { metric, metrics, table, teamName } = req.query;
 
     const result = await fetchCompetitionCSV({
       id,
-      metric,
-      previewMetrics: preview ?? [],
+      metrics: metric ? [metric] : metrics,
       table,
       teamName
     });
@@ -372,21 +370,20 @@ router.get(
     }),
     query: z.object({
       /**
-       * @deprecated Use `preview` instead
+       * @deprecated Use `metrics` instead
        */
       metric: z.optional(z.nativeEnum(Metric)),
-      preview: z.optional(queryParamMetricsArray),
+      metrics: z.optional(queryParamMetricsArray),
       limit: z.optional(z.coerce.number().int().positive().max(5))
     })
   }),
   executeRequest(async (req, res) => {
     const { id } = req.params;
-    const { metric, preview, limit } = req.query;
+    const { metric, metrics, limit } = req.query;
 
     const results = await fetchCompetitionTopHistory({
       id,
-      metric,
-      previewMetrics: preview ?? [],
+      metrics: metric ? [metric] : metrics,
       limit: limit ?? 5
     });
 

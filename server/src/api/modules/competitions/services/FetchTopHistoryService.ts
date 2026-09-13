@@ -5,13 +5,11 @@ import { fetchCompetitionDetails } from './FetchCompetitionDetailsService';
 
 export async function fetchCompetitionTopHistory({
   id,
-  metric,
-  previewMetrics,
+  metrics,
   limit
 }: {
   id: number;
-  metric?: Metric;
-  previewMetrics: Metric[];
+  metrics?: Metric[];
   limit: number;
 }): Promise<
   Array<{
@@ -22,20 +20,17 @@ export async function fetchCompetitionTopHistory({
     }>;
   }>
 > {
-  const { competition, metrics, participations } = await fetchCompetitionDetails({
+  const {
+    competition,
+    participations,
+    metrics: competitionMetrics
+  } = await fetchCompetitionDetails({
     id,
-    metric,
-    previewMetrics
+    metrics
   });
 
   const topPlayers = participations.slice(0, limit).map(p => p.player);
-
-  const selectedMetrics =
-    metric !== undefined
-      ? [metric]
-      : Array.from(new Set([...metrics.map(m => m.metric), ...(previewMetrics ?? [])]));
-
-  const metricValueKeys = selectedMetrics.map(getMetricValueKey);
+  const metricValueKeys = (metrics ?? competitionMetrics.map(m => m.metric)).map(getMetricValueKey);
 
   const snapshots = (await prisma.snapshot.findMany({
     where: {
