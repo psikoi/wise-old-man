@@ -64,7 +64,8 @@ function getPreviewMetrics(param: string | Array<string> | undefined) {
 export async function generateMetadata(props: PageProps) {
   const { id } = props.params;
 
-  const competition = await getCompetitionDetails(id);
+  const previewMetrics = getPreviewMetrics(props.searchParams.preview);
+  const competition = await getCompetitionDetails(id, previewMetrics);
 
   return {
     title: competition.title,

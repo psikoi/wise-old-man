@@ -11,17 +11,12 @@ interface PlayerStanding {
 }
 
 export function useCompetitionTimeMachine() {
-  const { competition, previewMetrics } = useCompetitionPageContext();
+  const { competition, effectiveMetrics, previewMetrics } = useCompetitionPageContext();
   const competitionDetails24hAgo = useCompetitionDetails24hAgo(competition, previewMetrics);
 
-  const metrics = useMemo(
-    () => Array.from(new Set(previewMetrics ?? competition.metrics.map((m) => m.metric))),
-    [competition.metrics, previewMetrics],
-  );
-
   const currentStandings = useMemo(
-    () => buildStandingsCache(metrics, competition),
-    [metrics, competition],
+    () => buildStandingsCache(effectiveMetrics, competition),
+    [effectiveMetrics, competition],
   );
 
   const previousStandings = useMemo(() => {
@@ -29,8 +24,8 @@ export function useCompetitionTimeMachine() {
       return undefined;
     }
 
-    return buildStandingsCache(metrics, competitionDetails24hAgo.data);
-  }, [metrics, competitionDetails24hAgo]);
+    return buildStandingsCache(effectiveMetrics, competitionDetails24hAgo.data);
+  }, [effectiveMetrics, competitionDetails24hAgo]);
 
   // The 24h-ago snapshot only covers a subset of the participants, so rank movement has to be
   // measured within that subset. Comparing a rank among 50 players against a rank among all of
