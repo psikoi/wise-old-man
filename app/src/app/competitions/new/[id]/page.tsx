@@ -3,7 +3,6 @@ import {
   CompetitionStatus,
   CompetitionStatusProps,
   CompetitionType,
-  Metric,
 } from "@wise-old-man/utils";
 import Link from "next/link";
 import { Button } from "~/components/Button";
@@ -51,19 +50,21 @@ interface PageProps {
   };
   searchParams: {
     metric?: string;
-    preview?: string;
+    preview?: string | Array<string>;
   };
 }
 
-function getPreviewMetric(param: string | undefined, competitionMetrics: Array<Metric>) {
-  const metric = getMetricParam(param);
-  return metric && !competitionMetrics.includes(metric) ? metric : undefined;
+function getPreviewMetrics(param: string | Array<string> | undefined) {
+  if (param === undefined) return undefined;
+
+  const metrics = (Array.isArray(param) ? param : [param]).map(getMetricParam).filter(Boolean);
+  return metrics.length > 0 ? metrics : undefined;
 }
 
 export async function generateMetadata(props: PageProps) {
   const { id } = props.params;
 
-  const competition = await getCompetitionDetails(id, getMetricParam(props.searchParams.preview));
+  const competition = await getCompetitionDetails(id);
 
   return {
     title: competition.title,
@@ -73,12 +74,8 @@ export async function generateMetadata(props: PageProps) {
 export default async function CompetitionPage(props: PageProps) {
   const { id } = props.params;
 
-  const competition = await getCompetitionDetails(id, getMetricParam(props.searchParams.preview));
-
-  const previewMetric = getPreviewMetric(
-    props.searchParams.preview,
-    competition.metrics.map((m) => m.metric),
-  );
+  const previewMetrics = getPreviewMetrics(props.searchParams.preview);
+  const competition = await getCompetitionDetails(id, previewMetrics);
 
   // Starting in less than 3 hours
   const isStartingSoon =
@@ -91,7 +88,7 @@ export default async function CompetitionPage(props: PageProps) {
     competition.endsAt.getTime() < Date.now() + 1000 * 60 * 60 * 3;
 
   return (
-    <CompetitionPageProvider competition={competition} previewMetric={previewMetric}>
+    <CompetitionPageProvider competition={competition} previewMetrics={previewMetrics}>
       <Container>
         <div className="mb-8">
           <Alert className="border-blue-700 bg-blue-900/10 px-4 py-3">

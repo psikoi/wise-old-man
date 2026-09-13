@@ -41,8 +41,8 @@ export function CompetitionTopHistoryChartDialog() {
         <DialogHeader className="space-y-1">
           <DialogTitle>Top participant history</DialogTitle>
           <DialogDescription>
-            {selectedMetric ? MetricProps[selectedMetric].name : "Total"} gained over time, by the
-            competition&apos;s top participants.
+            {selectedMetric === "total" ? "Total" : MetricProps[selectedMetric].name} gained over time,
+            by the competition&apos;s top participants.
           </DialogDescription>
         </DialogHeader>
         <Chart enabled={isOpen} />
@@ -61,8 +61,13 @@ function Chart({ enabled }: { enabled: boolean }) {
     isPending,
     isError,
   } = useQuery({
-    queryKey: ["competition-top-history", competition.id, selectedMetric ?? "total", 5],
-    queryFn: () => client.competitions.getCompetitionTopHistory(competition.id, selectedMetric, 5),
+    queryKey: ["competition-top-history", competition.id, selectedMetric, 5],
+    queryFn: () =>
+      client.competitions.getCompetitionTopHistory(
+        competition.id,
+        selectedMetric === "total" ? undefined : [selectedMetric],
+        5,
+      ),
     staleTime: 60_000,
     enabled,
   });
@@ -77,7 +82,7 @@ function Chart({ enabled }: { enabled: boolean }) {
 
   const datasets = topHistory.map((p) => ({
     name: p.player.displayName,
-    data: convertToDiffTimeseries(selectedMetric, p.history),
+    data: convertToDiffTimeseries(selectedMetric === "total" ? undefined : selectedMetric, p.history),
   }));
 
   if (!datasets.some((d) => d.data.length > 0)) {

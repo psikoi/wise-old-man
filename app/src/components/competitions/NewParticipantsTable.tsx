@@ -40,9 +40,10 @@ export function NewParticipantsTable({ teamName }: { teamName?: string }) {
 
   // The API only sorts the standings by one metric (the competition's "total", or the previewed metric).
   // Switching metric tabs doesn't refetch, so the rows have to be re-sorted client-side.
-  const sortedParticipations = useMemo(() => {
-    return sortParticipations(competition.participations, selectedMetric ?? "total");
-  }, [competition.participations, selectedMetric]);
+  const sortedParticipations = useMemo(
+    () => sortParticipations(competition.participations, selectedMetric),
+    [competition.participations, selectedMetric],
+  );
 
   // Ranks are always relative to the whole competition, even when the table is filtered
   // down to a single team (or to the outdated participants).
@@ -129,12 +130,11 @@ function TeamHeader({
   participants,
 }: {
   teamName: string;
-  selectedMetric?: Metric;
+  selectedMetric: Metric | "total";
   participants: CompetitionDetailsResponse["participations"];
 }) {
   const totalGained = participants.reduce(
-    (acc, curr) =>
-      acc + (curr.deltas.find((d) => d.metric === (selectedMetric ?? "total"))?.values.gained ?? 0),
+    (acc, curr) => acc + (curr.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0),
     0,
   );
 
@@ -176,7 +176,7 @@ function useColumnDefinition(ranks: Map<number, number>) {
         return ranks.get(row.player.id) ?? Infinity;
       },
       cell: ({ row }) => {
-        const rankDiff = getPlayerRankDiff(row.original.player.username, selectedMetric ?? "total");
+        const rankDiff = getPlayerRankDiff(row.original.player.username, selectedMetric);
 
         return (
           <div className="flex items-center gap-x-2 tabular-nums">
@@ -202,7 +202,7 @@ function useColumnDefinition(ranks: Map<number, number>) {
       cell: ({ row }) => {
         const params = new URLSearchParams();
 
-        if (selectedMetric !== undefined) {
+        if (selectedMetric !== "total") {
           params.set("metric", selectedMetric);
         }
 
@@ -223,26 +223,20 @@ function useColumnDefinition(ranks: Map<number, number>) {
     {
       id: "gained",
       accessorFn: (row) => {
-        return row.deltas.find((d) => d.metric === (selectedMetric ?? "total"))?.values.gained ?? 0;
+        return row.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0;
       },
       header: ({ column }) => {
         return <TableSortButton column={column}>Gained</TableSortButton>;
       },
       cell: ({ row }) => {
-        const gained =
-          row.original.deltas.find((d) => d.metric === (selectedMetric ?? "total"))?.values.gained ?? 0;
+        const gained = row.original.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0;
 
         return (
           <FormattedNumber
             value={gained}
             colored
             tooltipContent={
-              <MetricDeltasTooltip
-                deltas={row.original.deltas}
-                focusedMetric={selectedMetric ?? "total"}
-                type="values"
-                field="gained"
-              />
+              <MetricDeltasTooltip deltas={row.original.deltas} type="values" field="gained" />
             }
           />
         );
@@ -267,10 +261,10 @@ function useColumnDefinition(ranks: Map<number, number>) {
         return <TableSortButton column={column}>Levels</TableSortButton>;
       },
       accessorFn: (row) => {
-        return row.deltas.find((d) => d.metric === (selectedMetric ?? "total"))?.levels.gained ?? 0;
+        return row.deltas.find((d) => d.metric === selectedMetric)?.levels.gained ?? 0;
       },
       cell: ({ row }) => {
-        const levels = row.original.deltas.find((d) => d.metric === (selectedMetric ?? "total"))?.levels;
+        const levels = row.original.deltas.find((d) => d.metric === selectedMetric)?.levels;
 
         if (levels === undefined) return null;
         const { start, end, gained } = levels;
@@ -285,12 +279,7 @@ function useColumnDefinition(ranks: Map<number, number>) {
                 <span>{gained}</span>
               </TooltipTrigger>
               <TooltipContent>
-                <MetricDeltasTooltip
-                  deltas={row.original.deltas}
-                  focusedMetric={selectedMetric ?? "total"}
-                  type="levels"
-                  field="gained"
-                />
+                <MetricDeltasTooltip deltas={row.original.deltas} type="levels" field="gained" />
               </TooltipContent>
             </Tooltip>
           </span>

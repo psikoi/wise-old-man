@@ -2,7 +2,7 @@
 
 import { METRICS, Metric, MetricProps, MetricType, isMetric } from "@wise-old-man/utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "../Button";
 import {
   Combobox,
@@ -27,21 +27,22 @@ const METRIC_TYPE_LABELS = {
 };
 
 export function CompetitionPreviewMetricDialog() {
-  const { competition } = useCompetitionPageContext();
+  const { competition, effectiveMetrics } = useCompetitionPageContext();
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const [isTransitioning, startTransition] = useTransition();
+
   const isOpen = searchParams.get("dialog") === "preview";
 
   // Every metric in a competition is of the same type, so only metrics of that same type
-  // (and that aren't already being tracked) can be previewed.
-  const competitionMetrics = new Set(competition.metrics.map((m) => m.metric));
+  // (and that aren't already being shown) can be previewed.
   const competitionMetricType = MetricProps[competition.metrics[0].metric].type;
 
   const previewableMetrics = METRICS.filter(
-    (metric) => MetricProps[metric].type === competitionMetricType && !competitionMetrics.has(metric),
+    (metric) => MetricProps[metric].type === competitionMetricType && !effectiveMetrics.includes(metric),
   );
 
   const [selectedMetric, setSelectedMetric] = useState<Metric | undefined>(previewableMetrics[0]);
@@ -49,12 +50,20 @@ export function CompetitionPreviewMetricDialog() {
   function handleSubmit() {
     if (!selectedMetric) return;
 
+    // "preview" holds the full metric list, so the new one is appended to what's already shown.
     const nextParams = new URLSearchParams(searchParams);
-    nextParams.set("preview", selectedMetric);
+    nextParams.delete("preview");
+
+    for (const metric of [...effectiveMetrics, selectedMetric]) {
+      nextParams.append("preview", metric);
+    }
+
     nextParams.set("metric", selectedMetric);
     nextParams.delete("dialog");
 
-    router.push(`${pathname}?${nextParams.toString()}`);
+    startTransition(() => {
+      router.push(`${pathname}?${nextParams.toString()}`);
+    });
   }
 
   function handleClose() {
@@ -98,9 +107,9 @@ export function CompetitionPreviewMetricDialog() {
             size="lg"
             variant="blue"
             className="mt-4 justify-center"
-            disabled={!selectedMetric}
+            disabled={!selectedMetric || isTransitioning}
           >
-            Confirm
+            {isTransitioning ? "Loading..." : "Confirm"}
           </Button>
         </form>
       </DialogContent>

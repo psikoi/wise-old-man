@@ -62,7 +62,7 @@ export function Inner() {
 
   const entries = calculateMomentumEntries(
     competition,
-    selectedMetric ?? "total",
+    selectedMetric,
     currentStandings,
     previousStandings,
   );
@@ -87,14 +87,7 @@ export function Inner() {
             value={entry.gained}
             colored
             className="text-xs font-semibold tabular-nums"
-            tooltipContent={
-              <MetricDeltasTooltip
-                deltas={entry.deltas}
-                focusedMetric={selectedMetric ?? "total"}
-                type="values"
-                field="gained"
-              />
-            }
+            tooltipContent={<MetricDeltasTooltip deltas={entry.deltas} type="values" field="gained" />}
           />
         </li>
       ))}

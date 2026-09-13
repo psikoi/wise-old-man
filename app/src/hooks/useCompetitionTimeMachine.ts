@@ -11,13 +11,13 @@ interface PlayerStanding {
 }
 
 export function useCompetitionTimeMachine() {
-  const { competition, previewMetric } = useCompetitionPageContext();
-  const competitionDetails24hAgo = useCompetitionDetails24hAgo(competition, previewMetric);
+  const { competition, previewMetrics } = useCompetitionPageContext();
+  const competitionDetails24hAgo = useCompetitionDetails24hAgo(competition, previewMetrics);
 
-  const metrics = useMemo(() => {
-    const competitionMetrics = competition.metrics.map((m) => m.metric);
-    return [...competitionMetrics, ...(previewMetric ? [previewMetric] : [])];
-  }, [competition.metrics, previewMetric]);
+  const metrics = useMemo(
+    () => Array.from(new Set(previewMetrics ?? competition.metrics.map((m) => m.metric))),
+    [competition.metrics, previewMetrics],
+  );
 
   const currentStandings = useMemo(
     () => buildStandingsCache(metrics, competition),
@@ -95,7 +95,10 @@ export function useCompetitionTimeMachine() {
   };
 }
 
-function useCompetitionDetails24hAgo(competition: CompetitionDetailsResponse, previewMetric?: Metric) {
+function useCompetitionDetails24hAgo(
+  competition: CompetitionDetailsResponse,
+  previewMetrics?: Array<Metric>,
+) {
   const client = useWOMClient();
 
   const activeParticipantUsernames = useMemo(() => {
@@ -111,7 +114,7 @@ function useCompetitionDetails24hAgo(competition: CompetitionDetailsResponse, pr
   const isEnabled = !startedWithinLast24h && activeParticipantUsernames.length > 0;
 
   return useQuery({
-    queryKey: ["competition-time-machine", competition.id, previewMetric],
+    queryKey: ["competition-time-machine", competition.id, previewMetrics?.join(",")],
     queryFn: async () => {
       const params = new URLSearchParams();
 
@@ -121,8 +124,10 @@ function useCompetitionDetails24hAgo(competition: CompetitionDetailsResponse, pr
         params.append("usernames", username);
       }
 
-      if (previewMetric) {
-        params.set("metric", previewMetric);
+      if (previewMetrics !== undefined) {
+        for (const previewMetric of previewMetrics) {
+          params.append("metrics", previewMetric);
+        }
       }
 
       return client.getRequest<CompetitionDetailsResponse>(

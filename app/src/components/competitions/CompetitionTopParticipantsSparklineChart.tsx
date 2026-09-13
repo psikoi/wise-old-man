@@ -22,7 +22,12 @@ function Chart() {
     isError,
   } = useQuery({
     queryKey: ["competition-top-history", competition.id, selectedMetric ?? "total", 3],
-    queryFn: () => client.competitions.getCompetitionTopHistory(competition.id, selectedMetric, 3),
+    queryFn: () =>
+      client.competitions.getCompetitionTopHistory(
+        competition.id,
+        selectedMetric === "total" ? undefined : [selectedMetric],
+        3,
+      ),
     staleTime: 60_000,
   });
 
@@ -40,7 +45,7 @@ function Chart() {
 
   const datasets = topHistory.map((p) => ({
     name: p.player.displayName,
-    data: convertToDiffTimeseries(selectedMetric, p.history),
+    data: convertToDiffTimeseries(selectedMetric === "total" ? undefined : selectedMetric, p.history),
   }));
 
   if (!datasets.some((d) => d.data.length > 0)) {

@@ -48,7 +48,7 @@ interface Team {
   participations: CompetitionDetailsResponse["participations"];
 }
 
-function getTeams(competition: CompetitionDetailsResponse, focusedMetric: Metric | undefined): Team[] {
+function getTeams(competition: CompetitionDetailsResponse, selectedMetric: Metric | "total"): Team[] {
   const teamMap = new Map<string, CompetitionDetailsResponse["participations"]>();
 
   competition.participations.forEach((participation) => {
@@ -69,12 +69,12 @@ function getTeams(competition: CompetitionDetailsResponse, focusedMetric: Metric
       return (
         b.participations.reduce(
           (acc, curr) =>
-            acc + (curr.deltas.find((d) => d.metric === (focusedMetric ?? "total"))?.values.gained ?? 0),
+            acc + (curr.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0),
           0,
         ) -
         a.participations.reduce(
           (acc, curr) =>
-            acc + (curr.deltas.find((d) => d.metric === (focusedMetric ?? "total"))?.values.gained ?? 0),
+            acc + (curr.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0),
           0,
         )
       );
@@ -110,7 +110,7 @@ function getTeamAggregateDeltas(
   });
 }
 
-function getColumnDefinitions(focusedMetric: Metric | undefined): ColumnDef<Team>[] {
+function getColumnDefinitions(selectedMetric: Metric | "total"): ColumnDef<Team>[] {
   const columns: ColumnDef<Team>[] = [
     {
       id: "rank",
@@ -139,7 +139,7 @@ function getColumnDefinitions(focusedMetric: Metric | undefined): ColumnDef<Team
       accessorFn: (row) => {
         return row.participations.reduce(
           (acc, curr) =>
-            acc + (curr.deltas.find((d) => d.metric === (focusedMetric ?? "total"))?.values.gained ?? 0),
+            acc + (curr.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0),
           0,
         );
       },
@@ -154,7 +154,6 @@ function getColumnDefinitions(focusedMetric: Metric | undefined): ColumnDef<Team
             tooltipContent={
               <MetricDeltasTooltip
                 deltas={getTeamAggregateDeltas(row.original.participations)}
-                focusedMetric={focusedMetric ?? "total"}
                 type="values"
                 field="gained"
               />
@@ -170,8 +169,7 @@ function getColumnDefinitions(focusedMetric: Metric | undefined): ColumnDef<Team
         return (
           row.participations.reduce(
             (acc, curr) =>
-              acc +
-              (curr.deltas.find((d) => d.metric === (focusedMetric ?? "total"))?.values.gained ?? 0),
+              acc + (curr.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0),
             0,
           ) / row.participations.length
         );
@@ -190,7 +188,6 @@ function getColumnDefinitions(focusedMetric: Metric | undefined): ColumnDef<Team
                   row.original.participations,
                   row.original.participations.length,
                 )}
-                focusedMetric={focusedMetric ?? "total"}
                 type="values"
                 field="gained"
               />
@@ -226,7 +223,7 @@ function getColumnDefinitions(focusedMetric: Metric | undefined): ColumnDef<Team
             </Tooltip>
             (
             <FormattedNumber
-              value={mvp.deltas.find((d) => d.metric === (focusedMetric ?? "total"))?.values.gained ?? 0}
+              value={mvp.deltas.find((d) => d.metric === selectedMetric)?.values.gained ?? 0}
               colored
             />
             )

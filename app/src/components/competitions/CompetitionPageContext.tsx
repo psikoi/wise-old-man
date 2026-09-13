@@ -7,38 +7,47 @@ import { getMetricParam } from "~/utils/params";
 
 interface CompetitionPageContextValue {
   competition: CompetitionDetailsResponse;
-  previewMetric: Metric | undefined;
-  selectedMetric: Metric | undefined;
+  previewMetrics?: Array<Metric>;
+  effectiveMetrics: Array<Metric>;
+  selectedMetric: Metric | "total";
 }
 
 const CompetitionPageContext = createContext<CompetitionPageContextValue | null>(null);
 
 interface CompetitionPageProviderProps extends PropsWithChildren {
   competition: CompetitionDetailsResponse;
-  previewMetric?: Metric;
+  previewMetrics?: Array<Metric>;
 }
 
 export function CompetitionPageProvider(props: CompetitionPageProviderProps) {
-  const { competition, previewMetric, children } = props;
+  const { competition, previewMetrics, children } = props;
 
   const searchParams = useSearchParams();
 
-  const metrics = useMemo(() => {
-    const competitionMetrics = competition.metrics.map((m) => m.metric);
-    return [...competitionMetrics, ...(previewMetric ? [previewMetric] : [])];
-  }, [competition.metrics, previewMetric]);
-
   const metricParam = getMetricParam(searchParams.get("metric"));
 
+  const effectiveMetrics = useMemo(
+    () => Array.from(new Set(previewMetrics ?? competition.metrics.map((m) => m.metric))),
+    [competition.metrics, previewMetrics],
+  );
+
+  // With a single metric there's no "Total" tab to fall back to, so that metric is always selected.
   const selectedMetric =
-    metricParam && metrics.includes(metricParam)
+    metricParam && effectiveMetrics.includes(metricParam)
       ? metricParam
-      : competition.metrics.length > 1
-        ? undefined
-        : competition.metrics[0].metric;
+      : effectiveMetrics.length > 1
+        ? "total"
+        : effectiveMetrics[0];
 
   return (
-    <CompetitionPageContext.Provider value={{ competition, previewMetric, selectedMetric }}>
+    <CompetitionPageContext.Provider
+      value={{
+        competition,
+        previewMetrics,
+        effectiveMetrics,
+        selectedMetric,
+      }}
+    >
       {children}
     </CompetitionPageContext.Provider>
   );

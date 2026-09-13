@@ -9,7 +9,6 @@ interface MetricDeltasTooltipProps {
     values: MetricDelta;
     levels: MetricDelta;
   }>;
-  focusedMetric: Metric | "total";
   type: "values" | "levels";
   field: "start" | "end" | "gained";
 }

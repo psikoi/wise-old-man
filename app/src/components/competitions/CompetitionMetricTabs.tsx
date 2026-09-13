@@ -11,7 +11,7 @@ import { cn } from "~/utils/styling";
 import { MetricIconSmall } from "../Icon";
 import { QueryLink } from "../QueryLink";
 import { useCompetitionPageContext } from "./CompetitionPageContext";
-import { Children, cloneElement, forwardRef, useLayoutEffect, useRef, useState } from "react";
+import { Children, cloneElement, forwardRef, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import PlusIcon from "~/assets/plus.svg";
 import CloseIcon from "~/assets/close.svg";
@@ -23,26 +23,46 @@ const TAB_GAP = 8;
 const ESTIMATED_OVERFLOW_TAB_WIDTH = 44;
 
 export function CompetitionMetricTabs() {
-  const { competition, previewMetric, selectedMetric } = useCompetitionPageContext();
+  const { competition, effectiveMetrics, selectedMetric } = useCompetitionPageContext();
 
-  const metrics = [
-    ...competition.metrics.map((m) => m.metric),
-    ...(previewMetric ? [previewMetric] : []),
-  ];
+  const ownMetrics = useMemo(
+    () => new Set(competition.metrics.map((m) => m.metric)),
+    [competition.metrics],
+  );
 
-  const { containerRef, visibleMetrics } = useVisibleMetricTabs(metrics, selectedMetric);
+  const { containerRef, visibleMetrics } = useVisibleMetricTabs(
+    effectiveMetrics,
+    selectedMetric === "total" ? undefined : selectedMetric,
+  );
 
-  const overflowMetrics = metrics.filter((m) => !visibleMetrics.includes(m));
+  const overflowMetrics = effectiveMetrics.filter((m) => !visibleMetrics.includes(m));
+
+  // The "preview" param spells out the full metric list, so removing one tab means rewriting it.
+  // Once no previewed metrics are left, the list is just the competition's own metrics again,
+  // and the param can be dropped instead of repeating them.
+  function getPreviewQueryWithout(removedMetric: Metric) {
+    const nextMetrics = effectiveMetrics.filter((m) => m !== removedMetric);
+    return nextMetrics.some((m) => !ownMetrics.has(m)) ? nextMetrics : null;
+  }
 
   return (
     <div ref={containerRef} className="flex flex-row gap-x-2">
-      {competition.metrics.length > 1 && (
-        <MetricTab asChild isSelected={selectedMetric === undefined} className="shrink-0">
+      {effectiveMetrics.length > 1 && (
+        <MetricTab asChild isSelected={selectedMetric === "total"} className="shrink-0">
           <QueryLink query={{ metric: null }}>Total</QueryLink>
         </MetricTab>
       )}
       {visibleMetrics.map((metric) =>
-        metric === previewMetric ? (
+        ownMetrics.has(metric) ? (
+          <MetricTab key={metric} asChild isSelected={selectedMetric === metric}>
+            <QueryLink query={{ metric }} data-metric-tab={metric}>
+              <div className="-ml-0.5 shrink-0">
+                <MetricIconSmall metric={metric} />
+              </div>
+              <span className="truncate">{MetricProps[metric].name}</span>
+            </QueryLink>
+          </MetricTab>
+        ) : (
           <MetricTab
             key={metric}
             data-metric-tab={metric}
@@ -53,30 +73,17 @@ export function CompetitionMetricTabs() {
               <div className="-ml-0.5 shrink-0">
                 <MetricIconSmall metric={metric} />
               </div>
-              <span data-tab-label className="truncate">
-                {MetricProps[metric].name}
-              </span>
+              <span className="truncate">{MetricProps[metric].name}</span>
             </QueryLink>
             <QueryLink
               shallow={false}
               query={{
-                preview: null,
+                preview: getPreviewQueryWithout(metric),
                 metric: selectedMetric === metric ? null : undefined,
               }}
               aria-label="Stop previewing metric"
             >
               <CloseIcon className="-ml-1 h-5 w-5 rounded p-1 text-gray-200 hover:bg-gray-500" />
-            </QueryLink>
-          </MetricTab>
-        ) : (
-          <MetricTab key={metric} asChild isSelected={selectedMetric === metric}>
-            <QueryLink query={{ metric }} data-metric-tab={metric}>
-              <div className="-ml-0.5 shrink-0">
-                <MetricIconSmall metric={metric} />
-              </div>
-              <span data-tab-label className="truncate">
-                {MetricProps[metric].name}
-              </span>
             </QueryLink>
           </MetricTab>
         ),
@@ -90,35 +97,40 @@ export function CompetitionMetricTabs() {
               </button>
             </MetricTab>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="min-w-[16rem]">
             {overflowMetrics.map((metric) => (
               <QueryLink key={metric} query={{ metric }}>
-                <DropdownMenuItem className="gap-x-2">
-                  <MetricIconSmall metric={metric} />
-                  {MetricProps[metric].name}
+                <DropdownMenuItem className="justify-between gap-x-4">
+                  <div className="flex min-w-0 items-center gap-x-2">
+                    <MetricIconSmall metric={metric} />
+                    <span className="truncate">{MetricProps[metric].name}</span>
+                  </div>
+                  {!ownMetrics.has(metric) && (
+                    <span className="shrink-0 rounded border border-dashed border-gray-400 px-1 py-px text-xs text-gray-200">
+                      Preview
+                    </span>
+                  )}
                 </DropdownMenuItem>
               </QueryLink>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
       )}
-      {!previewMetric && (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              aria-label="Add preview metric"
-              className="mb-px flex h-[37px] w-[37px] shrink-0 items-center justify-center rounded-md border border-dashed border-gray-500 text-gray-200 outline-none hover:border-gray-300 hover:text-gray-100"
-            >
-              <PlusIcon className="h-4 w-4" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
-            <QueryLink shallow={false} query={{ dialog: "preview" }}>
-              <DropdownMenuItem>Preview metric</DropdownMenuItem>
-            </QueryLink>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-label="Add preview metric"
+            className="mb-px flex h-[37px] w-[37px] shrink-0 items-center justify-center rounded-md border border-dashed border-gray-500 text-gray-200 outline-none hover:border-gray-300 hover:text-gray-100"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <QueryLink shallow={false} query={{ dialog: "preview" }}>
+            <DropdownMenuItem>Preview metric</DropdownMenuItem>
+          </QueryLink>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -135,6 +147,17 @@ function useVisibleMetricTabs(metrics: Array<Metric>, selectedMetric: Metric | u
 
   const metricsKey = metrics.join(",");
 
+  // Previewing a metric changes this list without remounting the component, so the visible set
+  // would stay stale. A tab that isn't rendered can't be measured, and an unmeasured tab counts
+  // as zero wide - which is how a new tab ends up shown in a row that has no space for it.
+  // Showing them all again lets the next pass size every tab before it decides what to hide.
+  const [measuredKey, setMeasuredKey] = useState(metricsKey);
+
+  if (measuredKey !== metricsKey) {
+    setMeasuredKey(metricsKey);
+    setVisibleMetrics(metrics);
+  }
+
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -144,16 +167,18 @@ function useVisibleMetricTabs(metrics: Array<Metric>, selectedMetric: Metric | u
 
       const { metrics, selectedMetric } = propsRef.current;
 
+      const available = container.clientWidth;
+
+      // Tabs shrink and truncate their labels to fit the row, so their rendered widths are smaller
+      // than the widths they actually need. Laying the row out unconstrained first gives every tab
+      // its natural width. Nothing paints between the two writes, so this stays invisible.
+      container.style.width = "max-content";
+
       let pinnedWidth = 0;
 
       for (const child of Array.from(container.children) as Array<HTMLElement>) {
         if (child.dataset.metricTab !== undefined) {
-          // Tab labels are allowed to truncate, so the width we're after is the one the tab would
-          // have had if its label wasn't cut off.
-          const label = child.querySelector<HTMLElement>("[data-tab-label]");
-          const truncatedBy = label ? label.scrollWidth - label.clientWidth : 0;
-
-          metricTabWidths.current.set(child.dataset.metricTab, child.offsetWidth + truncatedBy);
+          metricTabWidths.current.set(child.dataset.metricTab, child.offsetWidth);
         } else if (child.dataset.overflowTab !== undefined) {
           overflowTabWidth.current = child.offsetWidth;
         } else {
@@ -161,9 +186,9 @@ function useVisibleMetricTabs(metrics: Array<Metric>, selectedMetric: Metric | u
         }
       }
 
-      const getWidth = (metric: Metric) => (metricTabWidths.current.get(metric) ?? 0) + TAB_GAP;
+      container.style.width = "";
 
-      const available = container.clientWidth;
+      const getWidth = (metric: Metric) => (metricTabWidths.current.get(metric) ?? 0) + TAB_GAP;
       const requiredWidth = metrics.reduce((sum, metric) => sum + getWidth(metric), pinnedWidth);
 
       let nextVisibleMetrics: Array<Metric>;
@@ -203,7 +228,18 @@ function useVisibleMetricTabs(metrics: Array<Metric>, selectedMetric: Metric | u
     const observer = new ResizeObserver(recalculate);
     observer.observe(container);
 
-    return () => observer.disconnect();
+    // Tab widths are measured from rendered text, so they're wrong until the webfont has swapped
+    // in. That swap doesn't resize the container, so the observer never hears about it.
+    let cancelled = false;
+
+    document.fonts.ready.then(() => {
+      if (!cancelled) recalculate();
+    });
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+    };
   }, [metricsKey, selectedMetric]);
 
   return { containerRef, visibleMetrics };

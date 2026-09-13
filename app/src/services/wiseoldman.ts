@@ -53,15 +53,13 @@ export function getCompetitionStatus<T extends Pick<CompetitionResponse, "starts
 
 // Cached functions
 
-export const getCompetitionDetails = cache((id: number, metric?: Metric) => {
-  return handleNotFound(apiClient.competitions.getCompetitionDetails(id, metric));
+export const getCompetitionDetails = cache((id: number, metrics?: Array<Metric>) => {
+  return handleNotFound(apiClient.competitions.getCompetitionDetails(id, metrics));
 });
 
-export const getCompetitionTopHistory = cache(
-  (id: number, metric?: Metric | undefined, limit?: number) => {
-    return handleNotFound(apiClient.competitions.getCompetitionTopHistory(id, metric, limit));
-  },
-);
+export const getCompetitionTopHistory = cache((id: number, metrics?: Array<Metric>, limit?: number) => {
+  return handleNotFound(apiClient.competitions.getCompetitionTopHistory(id, metrics, limit));
+});
 
 export const getDeltaLeaderboard = cache(
   (
