@@ -11,8 +11,8 @@ interface PlayerStanding {
 }
 
 export function useCompetitionTimeMachine() {
-  const { competition, effectiveMetrics, previewMetrics } = useCompetitionPageContext();
-  const competitionDetails24hAgo = useCompetitionDetails24hAgo(competition, previewMetrics);
+  const { competition, effectiveMetrics } = useCompetitionPageContext();
+  const competitionDetails24hAgo = useCompetitionDetails24hAgo(competition, effectiveMetrics);
 
   const currentStandings = useMemo(
     () => buildStandingsCache(effectiveMetrics, competition),
@@ -92,7 +92,7 @@ export function useCompetitionTimeMachine() {
 
 function useCompetitionDetails24hAgo(
   competition: CompetitionDetailsResponse,
-  previewMetrics?: Array<Metric>,
+  effectiveMetrics?: Array<Metric>,
 ) {
   const client = useWOMClient();
 
@@ -109,7 +109,7 @@ function useCompetitionDetails24hAgo(
   const isEnabled = !startedWithinLast24h && activeParticipantUsernames.length > 0;
 
   return useQuery({
-    queryKey: ["competition-time-machine", competition.id, previewMetrics?.join(",")],
+    queryKey: ["competition-time-machine", competition.id, effectiveMetrics?.join(",")],
     queryFn: async () => {
       const params = new URLSearchParams();
 
@@ -119,9 +119,9 @@ function useCompetitionDetails24hAgo(
         params.append("usernames", username);
       }
 
-      if (previewMetrics !== undefined) {
-        for (const previewMetric of previewMetrics) {
-          params.append("metrics", previewMetric);
+      if (effectiveMetrics !== undefined) {
+        for (const metric of effectiveMetrics) {
+          params.append("metrics", metric);
         }
       }
 

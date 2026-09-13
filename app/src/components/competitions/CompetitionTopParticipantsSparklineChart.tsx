@@ -21,7 +21,7 @@ function Chart() {
     isPending,
     isError,
   } = useQuery({
-    queryKey: ["competition-top-history", competition.id, selectedMetric ?? "total", 3],
+    queryKey: ["competition-top-history", competition.id, selectedMetric, 3],
     queryFn: () =>
       client.competitions.getCompetitionTopHistory(
         competition.id,

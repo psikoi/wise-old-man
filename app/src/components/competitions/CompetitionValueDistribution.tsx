@@ -7,12 +7,9 @@ import { useCompetitionPageContext } from "./CompetitionPageContext";
 import { METRIC_COLOR_MAP } from "~/utils/metrics";
 
 export function CompetitionValueDistribution() {
-  const { competition, previewMetrics } = useCompetitionPageContext();
+  const { competition, effectiveMetrics } = useCompetitionPageContext();
 
-  if (
-    competition.metrics.length === 1 &&
-    (previewMetrics === undefined || previewMetrics.length === 0)
-  ) {
+  if (effectiveMetrics.length < 2) {
     return null;
   }
 

@@ -60,7 +60,6 @@ function getColumnDefinitions(focusedMetric: Metric | "total"): ColumnDef<Team>[
             tooltipContent={
               <MetricDeltasTooltip
                 deltas={getTeamAggregateDeltas(row.original.participations)}
-                focusedMetric={focusedMetric}
                 type="values"
                 field="gained"
               />
@@ -95,7 +94,6 @@ function getColumnDefinitions(focusedMetric: Metric | "total"): ColumnDef<Team>[
                   row.original.participations,
                   row.original.participations.length,
                 )}
-                focusedMetric={focusedMetric}
                 type="values"
                 field="gained"
               />

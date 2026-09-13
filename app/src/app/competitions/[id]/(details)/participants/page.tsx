@@ -22,7 +22,10 @@ export async function generateMetadata(props: PageProps) {
   const { id } = props.params;
 
   const metricParam = getMetricParam(props.searchParams.metric);
-  const competition = await getCompetitionDetails(id, metricParam);
+  const competition = await getCompetitionDetails(
+    id,
+    metricParam === undefined ? undefined : [metricParam],
+  );
 
   return {
     title: competition.title,
@@ -33,7 +36,10 @@ export default async function CompetitionOverviewPage(props: PageProps) {
   const { id } = props.params;
 
   const metricParam = getMetricParam(props.searchParams.metric);
-  const competition = await getCompetitionDetails(id, metricParam);
+  const competition = await getCompetitionDetails(
+    id,
+    metricParam === undefined ? undefined : [metricParam],
+  );
 
   const focusedMetric =
     metricParam ?? (competition.metrics.length > 1 ? "total" : competition.metrics[0].metric);

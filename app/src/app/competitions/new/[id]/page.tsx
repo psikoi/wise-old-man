@@ -3,6 +3,7 @@ import {
   CompetitionStatus,
   CompetitionStatusProps,
   CompetitionType,
+  Metric,
 } from "@wise-old-man/utils";
 import Link from "next/link";
 import { Button } from "~/components/Button";
@@ -57,7 +58,9 @@ interface PageProps {
 function getPreviewMetrics(param: string | Array<string> | undefined) {
   if (param === undefined) return undefined;
 
-  const metrics = (Array.isArray(param) ? param : [param]).map(getMetricParam).filter(Boolean);
+  const metrics = (Array.isArray(param) ? param : [param])
+    .map(getMetricParam)
+    .filter((m): m is Metric => m !== undefined);
   return metrics.length > 0 ? metrics : undefined;
 }
 

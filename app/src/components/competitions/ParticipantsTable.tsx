@@ -172,12 +172,7 @@ function getColumnDefinitions(
             value={gained}
             colored
             tooltipContent={
-              <MetricDeltasTooltip
-                deltas={row.original.deltas}
-                focusedMetric={focusedMetric}
-                type="values"
-                field="gained"
-              />
+              <MetricDeltasTooltip deltas={row.original.deltas} type="values" field="gained" />
             }
           />
         );
@@ -256,12 +251,7 @@ function getColumnDefinitions(
                 <span>{gained}</span>
               </TooltipTrigger>
               <TooltipContent>
-                <MetricDeltasTooltip
-                  deltas={row.original.deltas}
-                  focusedMetric={focusedMetric}
-                  type="levels"
-                  field="gained"
-                />
+                <MetricDeltasTooltip deltas={row.original.deltas} type="levels" field="gained" />
               </TooltipContent>
             </Tooltip>
           </span>
@@ -325,9 +315,7 @@ function ParticipantStartCell(props: {
   return (
     <FormattedNumber
       value={start}
-      tooltipContent={
-        <MetricDeltasTooltip deltas={deltas} focusedMetric={focusedMetric} type="values" field="start" />
-      }
+      tooltipContent={<MetricDeltasTooltip deltas={deltas} type="values" field="start" />}
     />
   );
 }
@@ -385,9 +373,7 @@ function ParticipantEndCell(props: {
   return (
     <FormattedNumber
       value={end}
-      tooltipContent={
-        <MetricDeltasTooltip deltas={deltas} focusedMetric={focusedMetric} type="values" field="end" />
-      }
+      tooltipContent={<MetricDeltasTooltip deltas={deltas} type="values" field="end" />}
     />
   );
 }
