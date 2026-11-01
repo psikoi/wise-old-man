@@ -4,7 +4,7 @@ import { Group } from '../../../../types';
 
 export async function deleteGroup(
   id: number
-): AsyncResult<Group, { code: 'GROUP_NOT_FOUND' } | { code: 'FAILED_TO_DELETE_GROUP' }> {
+): AsyncResult<Group, { code: 'GROUP_NOT_FOUND' } | { code: 'FAILED_TO_DELETE_GROUP'; subError: unknown }> {
   const deleteResult = await fromPromise(
     prisma.group.delete({
       where: { id }

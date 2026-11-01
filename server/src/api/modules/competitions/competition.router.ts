@@ -688,7 +688,6 @@ router.put(
           throw new NotFoundErrorZ(result.error);
         case 'CANNOT_RESET_GROUP_COMPETITION_CODE':
           throw new BadRequestErrorZ(result.error);
-        case 'FAILED_TO_RESET_COMPETITION_CODE':
         case 'FAILED_TO_GENERATE_VERIFICATION_CODE':
           throw result.error;
         default:

@@ -1,4 +1,4 @@
-import { AsyncResult, complete, errored, isErrored } from '@attio/fetchable';
+import { AsyncResult, complete, errored } from '@attio/fetchable';
 import prisma from '../../../../prisma';
 import {
   ACTIVITIES,
@@ -75,29 +75,16 @@ export async function fetchGroupStatistics(
     build: PlayerBuild.MAIN
   });
 
-  const metricLeadersResult = await getMetricLeaders(players, allSnapshots);
-
-  if (isErrored(metricLeadersResult)) {
-    return metricLeadersResult;
-  }
-
   return complete({
     maxedCombatCount,
     maxedTotalCount,
     maxed200msCount,
     averageStats: formatSnapshotResponse(averageSnapshot, averageEfficiencyMap),
-    metricLeaders: metricLeadersResult.value
+    metricLeaders: getMetricLeaders(players, allSnapshots)
   });
 }
 
-async function getMetricLeaders(
-  players: Player[],
-  snapshots: Snapshot[]
-): AsyncResult<GroupMetricLeadersResponse, { code: 'GROUP_HAS_NO_MEMBERS' }> {
-  if (snapshots.length === 0) {
-    return errored({ code: 'GROUP_HAS_NO_MEMBERS' });
-  }
-
+function getMetricLeaders(players: Player[], snapshots: Snapshot[]): GroupMetricLeadersResponse {
   const playerMap = new Map<number, Player>(players.map(p => [p.id, p]));
 
   const metricLeaders = {
@@ -171,5 +158,5 @@ async function getMetricLeaders(
     };
   }
 
-  return complete(metricLeaders);
+  return metricLeaders;
 }

@@ -7,15 +7,15 @@ export async function resetGroupCode(
 ): AsyncResult<
   { newCode: string },
   | { code: 'GROUP_NOT_FOUND' }
-  | { code: 'FAILED_TO_GENERATE_VERIFICATION_CODE' }
   | { code: 'FAILED_TO_RESET_GROUP_CODE'; subError: unknown }
+  | { code: 'FAILED_TO_GENERATE_VERIFICATION_CODE'; subError: unknown }
 > {
   const generateVerificationResult = await cryptService.generateVerification();
 
   if (isErrored(generateVerificationResult)) {
     return errored({
       code: 'FAILED_TO_GENERATE_VERIFICATION_CODE',
-      subError: generateVerificationResult
+      subError: generateVerificationResult.error
     });
   }
 

@@ -7,9 +7,8 @@ export async function resetCompetitionCode(
 ): AsyncResult<
   { newCode: string },
   | { code: 'COMPETITION_NOT_FOUND' }
-  | { code: 'FAILED_TO_GENERATE_VERIFICATION_CODE' }
   | { code: 'CANNOT_RESET_GROUP_COMPETITION_CODE' }
-  | { code: 'FAILED_TO_RESET_COMPETITION_CODE'; subError: unknown }
+  | { code: 'FAILED_TO_GENERATE_VERIFICATION_CODE'; subError: unknown }
 > {
   const competition = await prisma.competition.findFirst({
     where: { id }
@@ -28,7 +27,7 @@ export async function resetCompetitionCode(
   if (isErrored(generateVerificationResult)) {
     return errored({
       code: 'FAILED_TO_GENERATE_VERIFICATION_CODE',
-      subError: generateVerificationResult
+      subError: generateVerificationResult.error
     });
   }
 
